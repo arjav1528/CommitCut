@@ -48,11 +48,15 @@ export function RepoInputList({ repos, onChange, errors }: Props) {
               value={repo}
               onChange={(e) => update(i, e.target.value)}
               aria-label={`Repository ${i + 1} URL`}
-              className="flex-1 rounded-xl px-3 py-2 text-sm transition-colors"
+              className="flex-1 text-sm transition-colors"
               style={{
-                background: "#0b1020",
-                border: `1.5px solid ${errors[i] ? "var(--coral)" : "var(--border)"}`,
-                color: "var(--text)",
+                background: "#fff",
+                border: `2px solid ${errors[i] ? "var(--coral)" : "var(--ink)"}`,
+                borderRadius: 10,
+                padding: "7px 10px",
+                color: "var(--ink)",
+                fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                outline: "none",
               }}
             />
             <button
@@ -61,24 +65,16 @@ export function RepoInputList({ repos, onChange, errors }: Props) {
               disabled={repos.length === 1}
               className="p-2 rounded-lg transition-opacity"
               style={{
-                color: "var(--muted)",
-                opacity: repos.length === 1 ? 0.3 : 0.6,
+                color: "var(--ink)",
+                opacity: repos.length === 1 ? 0.25 : 0.7,
                 cursor: repos.length === 1 ? "not-allowed" : "pointer",
               }}
-              onMouseEnter={(e) =>
-                repos.length > 1 &&
-                ((e.currentTarget as HTMLButtonElement).style.opacity = "1")
-              }
-              onMouseLeave={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.opacity =
-                  repos.length === 1 ? "0.3" : "0.6")
-              }
             >
               <Trash2 size={16} />
             </button>
           </div>
           {errors[i] && (
-            <p className="text-xs ml-7" style={{ color: "var(--coral)" }}>
+            <p className="text-xs ml-7" style={{ color: "var(--coral)", fontFamily: "Kalam, ui-sans-serif, sans-serif" }}>
               ✖ {errors[i]}
             </p>
           )}
@@ -87,19 +83,16 @@ export function RepoInputList({ repos, onChange, errors }: Props) {
 
       <button
         onClick={add}
-        className="flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-sm transition-all mt-1"
+        className="flex items-center gap-1.5 self-start mt-1"
         style={{
-          border: "1.5px solid var(--border)",
-          color: "var(--muted)",
+          border: "2px solid var(--ink)",
+          borderRadius: 999,
+          padding: "3px 10px",
           background: "transparent",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--violet)";
-          (e.currentTarget as HTMLButtonElement).style.color = "var(--violet)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
-          (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)";
+          color: "var(--muted)",
+          fontSize: 13,
+          fontFamily: "Kalam, ui-sans-serif, sans-serif",
+          cursor: "pointer",
         }}
       >
         <Plus size={14} />

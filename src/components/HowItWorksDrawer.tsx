@@ -22,7 +22,7 @@ export function HowItWorksDrawer({ open, onClose }: Props) {
       {open && (
         <div
           className="fixed inset-0 z-40"
-          style={{ background: "rgba(0,0,0,0.5)" }}
+          style={{ background: "rgba(0,0,0,0.35)" }}
           onClick={onClose}
           aria-hidden
         />
@@ -34,22 +34,28 @@ export function HowItWorksDrawer({ open, onClose }: Props) {
         className="fixed top-0 right-0 h-full z-50 flex flex-col gap-6 p-6 overflow-y-auto transition-transform duration-300"
         style={{
           width: "min(400px, 100vw)",
-          background: "var(--card)",
-          borderLeft: "1.5px solid var(--border)",
+          background: "var(--paper-2)",
+          borderLeft: "2px solid var(--ink)",
           transform: open ? "translateX(0)" : "translateX(100%)",
+          fontFamily: "Kalam, ui-sans-serif, sans-serif",
         }}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-bold text-lg" style={{ color: "var(--text)" }}>
+          <h2
+            style={{
+              color: "var(--ink)",
+              fontFamily: "var(--font-caveat), Caveat, cursive",
+              fontWeight: 700,
+              fontSize: 22,
+            }}
+          >
             How it works
           </h2>
           <button
             onClick={onClose}
             aria-label="Close drawer"
             className="p-1 rounded-lg transition-colors"
-            style={{ color: "var(--muted)" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--text)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--muted)")}
+            style={{ color: "var(--ink)", cursor: "pointer" }}
           >
             <X size={18} />
           </button>
@@ -57,14 +63,29 @@ export function HowItWorksDrawer({ open, onClose }: Props) {
 
         <section className="flex flex-col gap-4 text-sm" style={{ color: "var(--muted)", lineHeight: 1.7 }}>
           <div>
-            <h3 className="font-semibold mb-1" style={{ color: "var(--text)" }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-caveat), Caveat, cursive",
+                fontWeight: 700,
+                fontSize: 18,
+                color: "var(--ink)",
+                marginBottom: 6,
+              }}
+            >
               Scoring formula
             </h3>
             <div
-              className="rounded-xl p-3 font-mono text-sm"
-              style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+              style={{
+                background: "#fff",
+                border: "2px solid var(--ink)",
+                borderRadius: 14,
+                padding: 14,
+                fontFamily: "var(--font-geist-mono)",
+                fontSize: 13,
+                color: "var(--ink)",
+              }}
             >
-              <span style={{ color: "var(--violet)" }}>score</span> ={" "}
+              <span style={{ color: "var(--accent)" }}>score</span> ={" "}
               <span style={{ color: "var(--mint)" }}>0.5</span> × lines_added
               <br />
               &nbsp;&nbsp;&nbsp;&nbsp;+ <span style={{ color: "var(--mint)" }}>0.25</span> × lines_deleted
@@ -77,7 +98,15 @@ export function HowItWorksDrawer({ open, onClose }: Props) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-1" style={{ color: "var(--text)" }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-caveat), Caveat, cursive",
+                fontWeight: 700,
+                fontSize: 18,
+                color: "var(--ink)",
+                marginBottom: 6,
+              }}
+            >
               What&apos;s ignored
             </h3>
             <ul className="flex flex-col gap-1 list-disc list-inside">
@@ -86,14 +115,14 @@ export function HowItWorksDrawer({ open, onClose }: Props) {
                 Lock files:{" "}
                 <code
                   className="text-xs px-1 rounded"
-                  style={{ background: "var(--bg)", color: "var(--coral)" }}
+                  style={{ background: "#fff", border: "1px solid var(--ink)", color: "var(--coral)" }}
                 >
                   package-lock.json
                 </code>
                 ,{" "}
                 <code
                   className="text-xs px-1 rounded"
-                  style={{ background: "var(--bg)", color: "var(--coral)" }}
+                  style={{ background: "#fff", border: "1px solid var(--ink)", color: "var(--coral)" }}
                 >
                   yarn.lock
                 </code>
@@ -102,15 +131,24 @@ export function HowItWorksDrawer({ open, onClose }: Props) {
               <li>Minified files (*.min.js, *.min.css)</li>
               <li>Binary and image files</li>
               <li>
-                Generated dirs: <code className="text-xs px-1 rounded" style={{ background: "var(--bg)", color: "var(--coral)" }}>node_modules/</code>,{" "}
-                <code className="text-xs px-1 rounded" style={{ background: "var(--bg)", color: "var(--coral)" }}>dist/</code>,{" "}
-                <code className="text-xs px-1 rounded" style={{ background: "var(--bg)", color: "var(--coral)" }}>.next/</code>
+                Generated dirs:{" "}
+                <code className="text-xs px-1 rounded" style={{ background: "#fff", border: "1px solid var(--ink)", color: "var(--coral)" }}>node_modules/</code>,{" "}
+                <code className="text-xs px-1 rounded" style={{ background: "#fff", border: "1px solid var(--ink)", color: "var(--coral)" }}>dist/</code>,{" "}
+                <code className="text-xs px-1 rounded" style={{ background: "#fff", border: "1px solid var(--ink)", color: "var(--coral)" }}>.next/</code>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-1" style={{ color: "var(--text)" }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-caveat), Caveat, cursive",
+                fontWeight: 700,
+                fontSize: 18,
+                color: "var(--ink)",
+                marginBottom: 6,
+              }}
+            >
               Identity
             </h3>
             <p>
@@ -119,7 +157,15 @@ export function HowItWorksDrawer({ open, onClose }: Props) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-1" style={{ color: "var(--text)" }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-caveat), Caveat, cursive",
+                fontWeight: 700,
+                fontSize: 18,
+                color: "var(--ink)",
+                marginBottom: 6,
+              }}
+            >
               Privacy
             </h3>
             <p>

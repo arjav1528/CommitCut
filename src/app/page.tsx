@@ -44,6 +44,36 @@ function buildCsv(response: AnalyzeResponse, currency: string): string {
   return [header, ...rows].join("\n");
 }
 
+const seclabelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-caveat), Caveat, cursive",
+  fontWeight: 700,
+  fontSize: 20,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  color: "var(--ink)",
+  marginBottom: 10,
+};
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={seclabelStyle}>
+      <span
+        style={{
+          display: "inline-block",
+          width: 10,
+          height: 10,
+          borderRadius: "50%",
+          background: "var(--accent)",
+          border: "2px solid var(--ink)",
+          flexShrink: 0,
+        }}
+      />
+      {children}
+    </div>
+  );
+}
+
 export default function Home() {
   const [state, setState] = useState<AppState>("input");
   const [repos, setRepos] = useState<string[]>([""]);
@@ -135,49 +165,86 @@ export default function Home() {
   const hasErrors = Object.keys(repoErrors).length > 0;
   const canSubmit = repos.every((r) => r.trim()) && !!startDate && !!endDate && !hasErrors;
 
+  const inputStyle: React.CSSProperties = {
+    background: "#fff",
+    border: "2px solid var(--ink)",
+    borderRadius: 10,
+    color: "var(--muted)",
+    padding: "7px 10px",
+    fontSize: 14,
+    fontFamily: "Kalam, ui-sans-serif, sans-serif",
+  };
+
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: "var(--bg)" }}
+      style={{ background: "var(--paper)" }}
     >
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto w-full">
         <div className="flex items-center gap-3">
           <Logo size={36} />
-          <div>
-            <div
-              className="font-bold text-xl leading-none"
-              style={{ color: "var(--text)" }}
-            >
-              Commit
-              <span style={{ color: "var(--violet)" }}>Cut</span>
-            </div>
-            <div className="text-xs mt-0.5" style={{ color: "var(--muted)" }}>
-              Split the prize by what you actually committed.
-            </div>
+          <div
+            style={{
+              fontFamily: "var(--font-caveat), Caveat, cursive",
+              fontWeight: 700,
+              fontSize: 22,
+              color: "var(--ink)",
+              lineHeight: 1,
+            }}
+          >
+            Commit<span style={{ color: "var(--accent)" }}>Cut</span>
           </div>
         </div>
       </header>
 
+      {/* Hero headline */}
+      {(state === "input" || state === "error") && (
+        <div className="flex flex-col items-center text-center px-4 pt-2 pb-6">
+          <h1
+            style={{
+              fontFamily: "var(--font-caveat), Caveat, cursive",
+              fontWeight: 700,
+              fontSize: 32,
+              color: "var(--ink)",
+              margin: 0,
+              lineHeight: 1.2,
+            }}
+          >
+            Split the prize by what you actually committed.
+          </h1>
+          <p
+            style={{
+              fontFamily: "Kalam, ui-sans-serif, sans-serif",
+              fontSize: 15,
+              color: "var(--muted)",
+              marginTop: 8,
+            }}
+          >
+            Paste public repos · pick dates · cut the pot
+          </p>
+        </div>
+      )}
+
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center px-4 pb-16 pt-4">
+      <main className="flex-1 flex flex-col items-center px-4 pb-16 pt-0">
         <div className="w-full max-w-2xl flex flex-col gap-6">
 
           {/* INPUT STATE */}
           {(state === "input" || state === "error") && (
             <div
-              className="rounded-2xl p-6 flex flex-col gap-6"
+              className="flex flex-col gap-6"
               style={{
-                background: "var(--card)",
-                border: "1.5px solid var(--border)",
-                backdropFilter: "blur(8px)",
+                background: "var(--paper-2)",
+                border: "2px solid var(--ink)",
+                borderRadius: "18px 22px 16px 20px / 20px 16px 22px 18px",
+                boxShadow: "4px 5px 0 0 rgba(0,0,0,.85)",
+                padding: 24,
               }}
             >
               {/* Repos */}
               <div>
-                <label className="block text-xs font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-                  Repositories
-                </label>
+                <SectionLabel>Repositories</SectionLabel>
                 <RepoInputList
                   repos={repos}
                   onChange={(r) => { setRepos(r); setRepoErrors({}); }}
@@ -187,49 +254,41 @@ export default function Home() {
 
               {/* Date range */}
               <div>
-                <label className="block text-xs font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-                  Date range
-                </label>
+                <SectionLabel>Date range</SectionLabel>
                 <div className="flex gap-3">
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                     aria-label="Start date"
-                    className="flex-1 rounded-xl px-3 py-2 text-sm"
-                    style={{
-                      background: "#0b1020",
-                      border: "1.5px solid var(--border)",
-                      color: "var(--text)",
-                      colorScheme: "dark",
-                    }}
+                    className="flex-1"
+                    style={{ ...inputStyle, colorScheme: "light" }}
                   />
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                     aria-label="End date"
-                    className="flex-1 rounded-xl px-3 py-2 text-sm"
-                    style={{
-                      background: "#0b1020",
-                      border: "1.5px solid var(--border)",
-                      color: "var(--text)",
-                      colorScheme: "dark",
-                    }}
+                    className="flex-1"
+                    style={{ ...inputStyle, colorScheme: "light" }}
                   />
                 </div>
               </div>
 
               {/* Prize */}
               <div>
-                <label className="block text-xs font-semibold mb-3 uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-                  Prize amount{" "}
-                  <span className="normal-case font-normal">(optional)</span>
-                </label>
+                <SectionLabel>
+                  Prize{" "}
+                  <span style={{ fontWeight: 400, fontSize: 15, color: "var(--muted)" }}>(optional)</span>
+                </SectionLabel>
                 <div className="flex gap-3">
                   <div
-                    className="flex items-center flex-1 rounded-xl overflow-hidden"
-                    style={{ border: "1.5px solid var(--border)", background: "#0b1020" }}
+                    className="flex items-center flex-1 overflow-hidden"
+                    style={{
+                      border: "2px solid var(--ink)",
+                      borderRadius: 10,
+                      background: "#fff",
+                    }}
                   >
                     <span className="px-3 text-sm" style={{ color: "var(--muted)" }}>$</span>
                     <input
@@ -240,19 +299,17 @@ export default function Home() {
                       onChange={(e) => setPrizeAmount(e.target.value)}
                       aria-label="Prize amount"
                       className="flex-1 py-2 pr-3 text-sm bg-transparent"
-                      style={{ color: "var(--text)", outline: "none" }}
+                      style={{ color: "var(--ink)", outline: "none", fontFamily: "Kalam, ui-sans-serif, sans-serif" }}
                     />
                   </div>
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                     aria-label="Currency"
-                    className="rounded-xl px-3 py-2 text-sm"
                     style={{
-                      background: "#0b1020",
-                      border: "1.5px solid var(--border)",
-                      color: "var(--text)",
+                      ...inputStyle,
                       minWidth: 80,
+                      color: "var(--ink)",
                     }}
                   >
                     {CURRENCIES.map((c) => (
@@ -267,9 +324,10 @@ export default function Home() {
                 <div
                   className="rounded-xl px-4 py-3 text-sm"
                   style={{
-                    background: "rgba(248,113,113,0.08)",
-                    border: "1.5px dashed var(--coral)",
+                    background: "var(--paper)",
+                    border: "2px dashed var(--coral)",
                     color: "var(--coral)",
+                    fontFamily: "Kalam, ui-sans-serif, sans-serif",
                   }}
                 >
                   {errorMsg}
@@ -286,12 +344,13 @@ export default function Home() {
                 <div
                   className="rounded-xl px-4 py-4 flex flex-col gap-2 items-center text-center text-sm"
                   style={{
-                    background: "rgba(248,113,113,0.08)",
-                    border: "1.5px dashed var(--coral)",
+                    background: "var(--paper)",
+                    border: "2px dashed var(--coral)",
+                    fontFamily: "Kalam, ui-sans-serif, sans-serif",
                   }}
                 >
                   <div style={{ fontSize: 32 }}>✂</div>
-                  <div className="font-semibold" style={{ color: "var(--text)" }}>
+                  <div className="font-semibold" style={{ color: "var(--ink)" }}>
                     Nothing to cut.
                   </div>
                   <div style={{ color: "var(--muted)" }}>{errorMsg}</div>
@@ -305,25 +364,19 @@ export default function Home() {
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="rounded-full px-6 py-3 font-bold text-base transition-all"
+                className="w-full"
                 style={{
-                  background: canSubmit
-                    ? "linear-gradient(135deg, var(--violet), #5a7cff)"
-                    : "var(--border)",
-                  color: canSubmit ? "#fff" : "var(--muted)",
+                  background: canSubmit ? "var(--ink)" : "var(--muted)",
+                  color: "var(--paper)",
+                  border: "2px solid var(--ink)",
+                  borderRadius: 999,
+                  padding: "12px 18px",
+                  fontSize: 16,
+                  fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                  fontWeight: 700,
+                  boxShadow: canSubmit ? "2px 2px 0 0 rgba(0,0,0,.85)" : "none",
                   cursor: canSubmit ? "pointer" : "not-allowed",
-                  boxShadow: canSubmit ? "0 0 20px rgba(124,92,255,0.3)" : "none",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  if (canSubmit) {
-                    (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 24px rgba(124,92,255,0.45)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = canSubmit ? "0 0 20px rgba(124,92,255,0.3)" : "none";
+                  transition: "all 0.15s ease",
                 }}
               >
                 {!canSubmit && hasErrors
@@ -349,34 +402,35 @@ export default function Home() {
                 <div>
                   <h1
                     className="text-2xl font-bold leading-tight"
-                    style={{ color: "var(--text)" }}
+                    style={{
+                      color: "var(--ink)",
+                      fontFamily: "var(--font-caveat), Caveat, cursive",
+                      fontSize: 28,
+                    }}
                   >
                     Here&apos;s the cut
                     {results.contributors[0]?.prizeShare !== undefined && (
-                      <span style={{ color: "var(--violet)" }}>
+                      <span style={{ color: "var(--accent)" }}>
                         {" "}· {currency} {(prizeAmount ? parseFloat(prizeAmount) : 0).toLocaleString()}
                       </span>
                     )}
                   </h1>
-                  <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>
+                  <p className="text-sm mt-0.5" style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif" }}>
                     {results.totalCommits} commits across {results.repoCount} repo{results.repoCount > 1 ? "s" : ""} · {results.dateRange.start} → {results.dateRange.end}
                   </p>
                 </div>
                 <button
                   onClick={handleEdit}
-                  className="text-sm rounded-lg px-3 py-1.5 transition-colors"
+                  className="text-sm"
                   style={{
-                    border: "1.5px solid var(--border)",
+                    border: "2px solid var(--ink)",
+                    borderRadius: 999,
+                    padding: "3px 10px",
                     color: "var(--muted)",
                     background: "transparent",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--violet)";
-                    (e.currentTarget as HTMLButtonElement).style.color = "var(--violet)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
-                    (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)";
+                    fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                    fontSize: 13,
+                    cursor: "pointer",
                   }}
                 >
                   ✎ New analysis
@@ -385,8 +439,13 @@ export default function Home() {
 
               {/* Chart */}
               <div
-                className="rounded-2xl p-5"
-                style={{ background: "var(--card)", border: "1.5px solid var(--border)" }}
+                style={{
+                  background: "var(--paper-2)",
+                  border: "2px solid var(--ink)",
+                  borderRadius: "18px 22px 16px 20px / 20px 16px 22px 18px",
+                  boxShadow: "4px 5px 0 0 rgba(0,0,0,.85)",
+                  padding: 20,
+                }}
               >
                 <ContributionChart contributors={results.contributors} />
               </div>
@@ -398,31 +457,32 @@ export default function Home() {
               <div className="flex gap-3 flex-wrap">
                 <button
                   onClick={copyMarkdown}
-                  className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                  className="flex items-center gap-2"
                   style={{
-                    border: "1.5px solid var(--border)",
-                    color: copied ? "var(--mint)" : "var(--text)",
-                    background: "var(--card)",
-                    borderColor: copied ? "var(--mint)" : "var(--border)",
+                    border: "2px solid var(--ink)",
+                    borderRadius: 999,
+                    padding: "3px 12px",
+                    color: copied ? "var(--mint)" : "var(--ink)",
+                    background: "transparent",
+                    fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                    fontSize: 13,
+                    cursor: "pointer",
                   }}
                 >
                   {copied ? "✓ Copied!" : "⧉ Copy markdown"}
                 </button>
                 <button
                   onClick={exportCsv}
-                  className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors"
+                  className="flex items-center gap-2"
                   style={{
-                    border: "1.5px solid var(--border)",
-                    color: "var(--text)",
-                    background: "var(--card)",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--mint)";
-                    (e.currentTarget as HTMLButtonElement).style.color = "var(--mint)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)";
-                    (e.currentTarget as HTMLButtonElement).style.color = "var(--text)";
+                    border: "2px solid var(--ink)",
+                    borderRadius: 999,
+                    padding: "3px 12px",
+                    color: "var(--ink)",
+                    background: "transparent",
+                    fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                    fontSize: 13,
+                    cursor: "pointer",
                   }}
                 >
                   ⤓ Export CSV
@@ -437,9 +497,9 @@ export default function Home() {
       <footer
         className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap text-xs"
         style={{
-          borderTop: "1px solid var(--border)",
+          borderTop: "1px solid var(--ink)",
           color: "var(--muted)",
-          maxWidth: "none",
+          fontFamily: "Kalam, ui-sans-serif, sans-serif",
         }}
       >
         <span>
@@ -447,10 +507,8 @@ export default function Home() {
         </span>
         <button
           onClick={() => setDrawerOpen(true)}
-          className="underline transition-colors"
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--violet)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--muted)")}
+          className="underline"
+          style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", cursor: "pointer" }}
         >
           How it works
         </button>

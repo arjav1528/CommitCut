@@ -26,29 +26,52 @@ export function LoadingState({ summary, onEdit }: Props) {
 
   return (
     <div
-      className="rounded-2xl p-6 flex flex-col gap-5"
-      style={{ background: "var(--card)", border: "1.5px solid var(--border)" }}
+      className="flex flex-col gap-5"
+      style={{
+        background: "var(--paper-2)",
+        border: "2px solid var(--ink)",
+        borderRadius: "18px 22px 16px 20px / 20px 16px 22px 18px",
+        boxShadow: "4px 5px 0 0 rgba(0,0,0,.85)",
+        padding: 24,
+      }}
     >
       {/* Summary chip */}
       <div className="flex items-center justify-between gap-3">
         <div
           className="flex items-center gap-2 rounded-full px-3 py-1 text-sm"
-          style={{ background: "var(--border)", color: "var(--text)" }}
+          style={{
+            background: "var(--ink)",
+            color: "var(--paper)",
+            fontFamily: "Kalam, ui-sans-serif, sans-serif",
+          }}
         >
           <span>{summary}</span>
         </div>
         <button
           onClick={onEdit}
-          className="text-xs transition-colors"
-          style={{ color: "var(--muted)" }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--violet)")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--muted)")}
+          className="text-xs"
+          style={{
+            color: "var(--muted)",
+            fontFamily: "Kalam, ui-sans-serif, sans-serif",
+            cursor: "pointer",
+            border: "2px solid var(--ink)",
+            borderRadius: 999,
+            padding: "2px 8px",
+            background: "transparent",
+          }}
         >
           ✎ edit
         </button>
       </div>
 
-      <div style={{ color: "var(--text)", fontSize: "22px", fontWeight: 700 }}>
+      <div
+        style={{
+          color: "var(--ink)",
+          fontSize: "22px",
+          fontWeight: 700,
+          fontFamily: "var(--font-caveat), Caveat, cursive",
+        }}
+      >
         Cutting the prize…
       </div>
 
@@ -57,16 +80,34 @@ export function LoadingState({ summary, onEdit }: Props) {
         {[88, 65, 45, 30].map((w, i) => (
           <div key={i} className="flex items-center gap-3">
             <div
-              className="shimmer rounded-full flex-none"
-              style={{ width: 28, height: 28 }}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "var(--ink)",
+                opacity: 0.35,
+                flexShrink: 0,
+              }}
             />
             <div
-              className="shimmer rounded-lg flex-1"
-              style={{ height: 14, width: `${w}%` }}
+              style={{
+                height: 8,
+                width: `${w}%`,
+                background: "var(--ink)",
+                opacity: 0.35,
+                borderRadius: 4,
+                flex: 1,
+              }}
             />
             <div
-              className="shimmer rounded-lg flex-none"
-              style={{ height: 14, width: 44 }}
+              style={{
+                height: 8,
+                width: 44,
+                background: "var(--ink)",
+                opacity: 0.35,
+                borderRadius: 4,
+                flexShrink: 0,
+              }}
             />
           </div>
         ))}
@@ -75,12 +116,19 @@ export function LoadingState({ summary, onEdit }: Props) {
       {/* Status line */}
       <div className="flex items-center gap-2 mt-1">
         <span
-          className="rounded-full flex-none"
-          style={{ width: 6, height: 6, background: "var(--violet)", display: "inline-block" }}
+          style={{
+            width: 6,
+            height: 6,
+            background: "var(--accent)",
+            borderRadius: "50%",
+            border: "1.5px solid var(--ink)",
+            display: "inline-block",
+            flexShrink: 0,
+          }}
         />
         <span
           className="text-sm transition-all"
-          style={{ color: "var(--muted)", fontFamily: "var(--font-geist-mono)" }}
+          style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif" }}
         >
           {PHASES[phase]}
         </span>
