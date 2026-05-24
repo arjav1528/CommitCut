@@ -11,13 +11,51 @@ function normalize(value: number, max: number): number {
   return max === 0 ? 0 : value / max;
 }
 
+// Extract GitHub username from noreply email: "12345+username@users.noreply.github.com" → "username"
+function parseNoreplyUsername(email: string): string | null {
+  const m = email.match(/^\d+\+(.+)@users\.noreply\.github\.com$/);
+  return m ? m[1].toLowerCase() : null;
+}
+
+// Merge entries where a GitHub noreply email maps to an existing contributor by name.
+// Keeps the real email as canonical; merges noreply stats into it.
+function mergeNoreplyEntries(entries: CommitEntry[]): CommitEntry[] {
+  // Build name→email map for non-noreply emails first
+  const nameToEmail = new Map<string, string>();
+  for (const e of entries) {
+    if (!parseNoreplyUsername(e.authorEmail)) {
+      nameToEmail.set(e.authorName.toLowerCase(), e.authorEmail);
+      // also index by first token (handle "Soham Das" ↔ "sohamdasx")
+    }
+  }
+
+  return entries.map((e) => {
+    const noReplyUser = parseNoreplyUsername(e.authorEmail);
+    if (!noReplyUser) return e;
+
+    // Try matching noreply username against known contributor names
+    for (const [knownName, canonicalEmail] of nameToEmail) {
+      const knownTokens = knownName.split(/\s+/);
+      if (
+        knownName === noReplyUser ||
+        knownTokens.some((t) => t === noReplyUser) ||
+        noReplyUser.includes(knownTokens[0])
+      ) {
+        return { ...e, authorEmail: canonicalEmail };
+      }
+    }
+    return e;
+  });
+}
+
 export function scoreContributors(
   entries: CommitEntry[],
   prizeAmount?: number
 ): ContributorStats[] {
+  const merged = mergeNoreplyEntries(entries);
   const map = new Map<string, RawTotals & { name: string }>();
 
-  for (const entry of entries) {
+  for (const entry of merged) {
     const key = entry.authorEmail;
     const existing = map.get(key);
     if (existing) {
