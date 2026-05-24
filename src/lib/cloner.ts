@@ -12,26 +12,22 @@ export async function cloneAndAnalyze(
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "commitcut-"));
   try {
     const git = simpleGit();
-    // Shallow clone with blobless filter for speed
+    // Shallow clone since startDate — fetches commits+blobs in range only
     await git.clone(repoUrl, tmpDir, [
-      "--filter=blob:none",
-      "--no-checkout",
+      `--shallow-since=${startDate}`,
+      "--no-single-branch",
       "--quiet",
     ]);
 
     const repoGit = simpleGit(tmpDir);
 
-    // Fetch full history (needed for log)
-    await repoGit.fetch(["--unshallow", "--quiet"]).catch(() => {
-      // already full depth — ignore
-    });
-
     const logOutput = await repoGit.raw([
       "log",
+      "--all",
       "--numstat",
       "--no-merges",
-      `--since=${startDate}`,
-      `--until=${endDate} 23:59:59`,
+      `--after=${startDate}`,
+      `--before=${endDate} 23:59:59`,
       `--pretty=format:COMMIT|%H|%ae|%an`,
       "--diff-filter=AM",
     ]);
