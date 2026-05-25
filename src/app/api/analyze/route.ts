@@ -111,5 +111,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Force Node.js runtime — Edge runtime cannot spawn child processes (git)
+export const runtime = "nodejs";
 // Allow up to 300s on platforms that support it (Vercel Pro / Railway / Render)
-export const maxDuration = 300;
+// Vercel Hobby caps at 60s regardless
+export const maxDuration = 60;
