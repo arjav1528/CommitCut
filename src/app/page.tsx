@@ -146,9 +146,9 @@ export default function Home() {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center px-4 pb-16 pt-0">
         <div className="w-full max-w-5xl flex flex-col gap-6">
-          <div className="md:grid md:grid-cols-2 gap-8 items-start flex flex-col">
+          <div className="md:grid md:grid-cols-2 gap-8 items-start flex flex-col items-center md:items-start">
             {/* LEFT — hero */}
-            <div className="hero-enter flex flex-col gap-4 pt-4">
+            <div className="hero-enter flex flex-col gap-4 pt-4 w-full items-center md:items-start text-center md:text-left">
               <h1
                 style={{
                   fontFamily: "var(--font-caveat), Caveat, cursive",
@@ -157,6 +157,7 @@ export default function Home() {
                   color: "var(--ink)",
                   margin: 0,
                   lineHeight: 1.2,
+                  textAlign: "inherit",
                 }}
               >
                 Split the prize by what you actually{" "}
@@ -192,7 +193,7 @@ export default function Home() {
                   fontSize: 14,
                   cursor: "pointer",
                   fontWeight: 700,
-                  alignSelf: "flex-start",
+                  alignSelf: "center",
                 }}
               >
                 ✦ Try a demo
@@ -201,7 +202,7 @@ export default function Home() {
             </div>
 
             {/* RIGHT — form */}
-            <div className="form-enter">
+            <div className="form-enter w-full">
               <div
                 className="flex flex-col gap-6"
                 style={{
@@ -212,71 +213,63 @@ export default function Home() {
                   padding: 24,
                 }}
               >
-                <div
-                  style={
-                    showPreview
-                      ? { display: "grid", gridTemplateColumns: "1.4fr 0.9fr", gap: 12 }
-                      : {}
-                  }
-                >
-                  <div className="flex flex-col gap-6">
-                    {/* Repos */}
-                    <div>
-                      <SectionLabel>Repositories</SectionLabel>
-                      <RepoInputList
-                        repos={repos}
-                        onChange={(r) => { setRepos(r); setRepoErrors({}); }}
-                        errors={repoErrors}
-                      />
-                    </div>
+                <div className="flex flex-col gap-6">
+                  {/* Repos */}
+                  <div>
+                    <SectionLabel>Repositories</SectionLabel>
+                    <RepoInputList
+                      repos={repos}
+                      onChange={(r) => { setRepos(r); setRepoErrors({}); }}
+                      errors={repoErrors}
+                    />
+                  </div>
 
-                    {/* Date range */}
-                    <div>
-                      <SectionLabel>Date range</SectionLabel>
-                      <DateRangePicker
-                        startDate={startDate}
-                        endDate={endDate}
-                        allTime={allTime}
-                        onStartChange={setStartDate}
-                        onEndChange={setEndDate}
-                        onAllTimeChange={setAllTime}
-                      />
-                    </div>
+                  {/* Date range */}
+                  <div>
+                    <SectionLabel>Date range</SectionLabel>
+                    <DateRangePicker
+                      startDate={startDate}
+                      endDate={endDate}
+                      allTime={allTime}
+                      onStartChange={setStartDate}
+                      onEndChange={setEndDate}
+                      onAllTimeChange={setAllTime}
+                    />
+                  </div>
 
-                    {/* Prize */}
-                    <div>
-                      <SectionLabel>
-                        Prize{" "}
-                        <span style={{ fontWeight: 400, fontSize: 15, color: "var(--muted)" }}>
-                          (optional)
-                        </span>
-                      </SectionLabel>
-                      <div
+                  {/* Prize */}
+                  <div>
+                    <SectionLabel>
+                      Prize{" "}
+                      <span style={{ fontWeight: 400, fontSize: 15, color: "var(--muted)" }}>
+                        (optional)
+                      </span>
+                    </SectionLabel>
+                    <div
+                      style={{
+                        border: "2px solid var(--ink)",
+                        borderRadius: 10,
+                        background: "#fff",
+                      }}
+                    >
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="0.00"
+                        value={prizeAmount}
+                        onChange={(e) => setPrizeAmount(e.target.value)}
+                        aria-label="Prize amount"
+                        className="w-full py-2 px-3 text-sm bg-transparent"
                         style={{
-                          border: "2px solid var(--ink)",
-                          borderRadius: 10,
-                          background: "#fff",
+                          color: "var(--ink)",
+                          outline: "none",
+                          fontFamily: "Kalam, ui-sans-serif, sans-serif",
                         }}
-                      >
-                        <input
-                          type="number"
-                          min={0}
-                          placeholder="0.00"
-                          value={prizeAmount}
-                          onChange={(e) => setPrizeAmount(e.target.value)}
-                          aria-label="Prize amount"
-                          className="w-full py-2 px-3 text-sm bg-transparent"
-                          style={{
-                            color: "var(--ink)",
-                            outline: "none",
-                            fontFamily: "Kalam, ui-sans-serif, sans-serif",
-                          }}
-                        />
-                      </div>
+                      />
                     </div>
                   </div>
 
-                  {/* Preview rail */}
+                  {/* Preview rail — below inputs on all sizes */}
                   {showPreview && (
                     <div
                       className="rail-enter"
@@ -286,8 +279,9 @@ export default function Home() {
                         borderRadius: 12,
                         padding: 10,
                         display: "flex",
-                        flexDirection: "column",
-                        gap: 6,
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        gap: 12,
                       }}
                     >
                       <div
@@ -296,6 +290,7 @@ export default function Home() {
                           fontWeight: 700,
                           fontSize: 16,
                           color: "var(--ink)",
+                          width: "100%",
                         }}
                       >
                         Summary
@@ -311,20 +306,11 @@ export default function Home() {
                           {prizeNum.toLocaleString()} total
                         </div>
                       )}
-                      <div
-                        style={{ borderTop: "1px dashed var(--ink)", marginTop: 4, paddingTop: 4 }}
-                      />
-                      <div style={{ fontSize: 11, color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif" }}>
-                        Per-person if equal:
-                      </div>
                       {prizeNum > 0 && filledRepos.length > 0 && (
-                        <div style={{ fontSize: 13, fontFamily: "Kalam, ui-sans-serif, sans-serif", color: "var(--ink)", fontWeight: 700 }}>
-                          {(prizeNum / filledRepos.length).toFixed(0)} × {filledRepos.length}
+                        <div style={{ fontSize: 13, fontFamily: "Kalam, ui-sans-serif, sans-serif", color: "var(--accent)", fontWeight: 700 }}>
+                          {(prizeNum / filledRepos.length).toFixed(0)} × {filledRepos.length} equal split
                         </div>
                       )}
-                      <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", marginTop: 2 }}>
-                        actual split after analysis
-                      </div>
                     </div>
                   )}
                 </div>
