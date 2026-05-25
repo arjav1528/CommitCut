@@ -7,8 +7,10 @@ import { format, isValid } from "date-fns";
 interface Props {
   startDate: string;
   endDate: string;
+  allTime: boolean;
   onStartChange: (d: string) => void;
   onEndChange: (d: string) => void;
+  onAllTimeChange: (v: boolean) => void;
 }
 
 const CAL_CSS = `
@@ -107,14 +109,7 @@ const CAL_CSS = `
   .rdp-month { padding: 0; }
 `;
 
-const ALL_TIME_START = "2008-01-01";
-
-function isAllTime(start: string, end: string): boolean {
-  return start === ALL_TIME_START && end === format(new Date(), "yyyy-MM-dd");
-}
-
 function formatDisplay(start: string, end: string): string {
-  if (isAllTime(start, end)) return "All time";
   const s = start ? format(new Date(start), "MMM d, yyyy") : "";
   const e = end ? format(new Date(end), "MMM d, yyyy") : "";
   if (s && e) return `${s} → ${e}`;
@@ -122,7 +117,7 @@ function formatDisplay(start: string, end: string): string {
   return "";
 }
 
-export function DateRangePicker({ startDate, endDate, onStartChange, onEndChange }: Props) {
+export function DateRangePicker({ startDate, endDate, allTime, onStartChange, onEndChange, onAllTimeChange }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -135,6 +130,7 @@ export function DateRangePicker({ startDate, endDate, onStartChange, onEndChange
       : undefined;
 
   function handleSelect(range: DateRange | undefined) {
+    onAllTimeChange(false);
     if (!range) {
       onStartChange("");
       onEndChange("");
@@ -152,8 +148,8 @@ export function DateRangePicker({ startDate, endDate, onStartChange, onEndChange
     return () => document.removeEventListener("mousedown", onOutside);
   }, [open]);
 
-  const hasValue = !!(startDate || endDate);
-  const display = formatDisplay(startDate, endDate);
+  const hasValue = allTime || !!(startDate || endDate);
+  const display = allTime ? "All time" : formatDisplay(startDate, endDate);
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -163,7 +159,7 @@ export function DateRangePicker({ startDate, endDate, onStartChange, onEndChange
         onClick={() => setOpen((o) => !o)}
         style={{
           width: "100%",
-          background: open ? "#fff" : "#fff",
+          background: "#fff",
           border: `2px solid ${open ? "var(--accent)" : "var(--ink)"}`,
           borderRadius: 10,
           padding: "10px 14px",
@@ -218,21 +214,21 @@ export function DateRangePicker({ startDate, endDate, onStartChange, onEndChange
           <style>{CAL_CSS}</style>
           <button
             onClick={() => {
-              const today = format(new Date(), "yyyy-MM-dd");
-              onStartChange(ALL_TIME_START);
-              onEndChange(today);
+              onAllTimeChange(true);
+              onStartChange("");
+              onEndChange("");
               setOpen(false);
             }}
             style={{
               width: "100%",
               marginBottom: 10,
-              background: isAllTime(startDate, endDate) ? "var(--accent)" : "transparent",
-              border: `2px solid ${isAllTime(startDate, endDate) ? "var(--accent)" : "var(--ink)"}`,
+              background: allTime ? "var(--accent)" : "transparent",
+              border: `2px solid ${allTime ? "var(--accent)" : "var(--ink)"}`,
               borderRadius: 8,
               padding: "5px 0",
               fontSize: 13,
               fontFamily: "Kalam, ui-sans-serif, sans-serif",
-              color: isAllTime(startDate, endDate) ? "#fff" : "var(--ink)",
+              color: allTime ? "#fff" : "var(--ink)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -241,14 +237,14 @@ export function DateRangePicker({ startDate, endDate, onStartChange, onEndChange
           </button>
           <DayPicker
             mode="range"
-            selected={isAllTime(startDate, endDate) ? undefined : selected}
+            selected={allTime ? undefined : selected}
             onSelect={handleSelect}
             defaultMonth={selected?.from ?? new Date()}
             numberOfMonths={1}
             showOutsideDays
           />
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-            {startDate && endDate && (
+            {(allTime || (startDate && endDate)) && (
               <button
                 onClick={() => setOpen(false)}
                 style={{
@@ -270,7 +266,7 @@ export function DateRangePicker({ startDate, endDate, onStartChange, onEndChange
             )}
             {hasValue && (
               <button
-                onClick={() => { onStartChange(""); onEndChange(""); }}
+                onClick={() => { onAllTimeChange(false); onStartChange(""); onEndChange(""); }}
                 style={{
                   flex: 1,
                   background: "transparent",

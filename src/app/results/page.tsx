@@ -107,7 +107,7 @@ export default function ResultsPage() {
 
     const repos = reposRaw.split(",").filter(Boolean);
 
-    if (!repos.length || !start || !end) {
+    if (!repos.length) {
       router.replace("/");
       return;
     }
@@ -118,16 +118,15 @@ export default function ResultsPage() {
     setPrizeParam(prize);
     setCurrency(curr);
 
+    const body: Record<string, unknown> = { repoUrls: repos, currency: curr };
+    if (start) body.startDate = start;
+    if (end) body.endDate = end;
+    if (prize) body.prizeAmount = parseFloat(prize);
+
     fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        repoUrls: repos,
-        startDate: start,
-        endDate: end,
-        prizeAmount: prize ? parseFloat(prize) : undefined,
-        currency: curr,
-      }),
+      body: JSON.stringify(body),
     })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {
@@ -325,7 +324,7 @@ export default function ResultsPage() {
                     )}
                   </h1>
                   <p className="text-sm mt-0.5" style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif" }}>
-                    {results.totalCommits} commits across {results.repoCount} repo{results.repoCount > 1 ? "s" : ""} · {results.dateRange.start} → {results.dateRange.end}
+                    {results.totalCommits} commits across {results.repoCount} repo{results.repoCount > 1 ? "s" : ""}{results.dateRange.start ? ` · ${results.dateRange.start} → ${results.dateRange.end}` : " · all time"}
                     {excluded.size > 0 && ` · ${excluded.size} excluded`}
                   </p>
                 </div>

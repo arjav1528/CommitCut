@@ -78,11 +78,13 @@ export default function Home() {
   const [prizeAmount, setPrizeAmount] = useState<string>("");
   const [currency, setCurrency] = useState("USD");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [allTime, setAllTime] = useState(false);
 
   function loadDemo() {
     setRepos(DEMO.repos);
-    setStartDate(DEMO.start);
-    setEndDate(DEMO.end);
+    setStartDate("");
+    setEndDate("");
+    setAllTime(true);
     setPrizeAmount(DEMO.prize);
     setCurrency(DEMO.currency);
     setRepoErrors({});
@@ -95,8 +97,8 @@ export default function Home() {
       if (err) errors[i] = err;
     });
     setRepoErrors(errors);
-    return Object.keys(errors).length === 0 && !!startDate && !!endDate;
-  }, [repos, startDate, endDate]);
+    return Object.keys(errors).length === 0 && (allTime || (!!startDate && !!endDate));
+  }, [repos, startDate, endDate, allTime]);
 
   function handleSubmit() {
     if (!validate()) return;
@@ -105,23 +107,25 @@ export default function Home() {
       .map((r) => (r.startsWith("http") ? r : `https://${r}`));
     const params = new URLSearchParams();
     params.set("repos", filledRepos.join(","));
-    params.set("start", startDate);
-    params.set("end", endDate);
+    if (!allTime) {
+      params.set("start", startDate);
+      params.set("end", endDate);
+    }
     if (prizeAmount) params.set("prize", prizeAmount);
     if (currency !== "USD") params.set("currency", currency);
     router.push(`/results?${params.toString()}`);
   }
 
   const hasErrors = Object.keys(repoErrors).length > 0;
-  const canSubmit = repos.every((r) => r.trim()) && !!startDate && !!endDate && !hasErrors;
+  const canSubmit = repos.every((r) => r.trim()) && (allTime || (!!startDate && !!endDate)) && !hasErrors;
 
-  const showPreview = !!(startDate && endDate && repos.some((r) => r.trim()));
+  const showPreview = !!(  (allTime || (startDate && endDate)) && repos.some((r) => r.trim()));
   const dayCount =
-    startDate && endDate
+    startDate && endDate && !allTime
       ? Math.round(
           (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000
         )
-      : 0;
+      : null;
   const filledRepos = repos.filter((r) => r.trim());
   const prizeNum = prizeAmount ? parseFloat(prizeAmount) : 0;
 
@@ -248,8 +252,10 @@ export default function Home() {
                       <DateRangePicker
                         startDate={startDate}
                         endDate={endDate}
+                        allTime={allTime}
                         onStartChange={setStartDate}
                         onEndChange={setEndDate}
+                        onAllTimeChange={setAllTime}
                       />
                     </div>
 
@@ -328,7 +334,7 @@ export default function Home() {
                         {filledRepos.length} repo{filledRepos.length !== 1 ? "s" : ""}
                       </div>
                       <div style={{ fontSize: 13, fontFamily: "Kalam, ui-sans-serif, sans-serif", color: "var(--ink)" }}>
-                        {dayCount} day{dayCount !== 1 ? "s" : ""}
+                        {allTime ? "All time" : dayCount !== null ? `${dayCount} day${dayCount !== 1 ? "s" : ""}` : ""}
                       </div>
                       {prizeNum > 0 && (
                         <div style={{ fontSize: 13, fontFamily: "Kalam, ui-sans-serif, sans-serif", color: "var(--ink)" }}>

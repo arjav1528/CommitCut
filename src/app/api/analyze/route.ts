@@ -9,8 +9,8 @@ const schema = z.object({
   repoUrls: z
     .array(z.string().url().regex(/github\.com\/[^/]+\/[^/]+/, "must be a github.com repo URL"))
     .min(1, "at least one repo required"),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format"),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format"),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format").optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format").optional(),
   prizeAmount: z.number().positive().optional(),
   currency: z.string().optional(),
 });
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (contributors.length === 0) {
       return NextResponse.json<AnalyzeError>(
         {
-          error: `No commits found between ${startDate} and ${endDate} across ${repoUrls.length} repo(s).`,
+          error: `No commits found${startDate ? ` between ${startDate} and ${endDate}` : ""} across ${repoUrls.length} repo(s).`,
           code: "NO_COMMITS",
         },
         { status: 404 }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       contributors,
       totalCommits: merged.length,
       repoCount: repoUrls.length,
-      dateRange: { start: startDate, end: endDate },
+      dateRange: { start: startDate ?? "", end: endDate ?? "" },
       timeline,
     };
 
