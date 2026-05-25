@@ -44,8 +44,9 @@ export function parseGitLogOutput(output: string): CommitEntry[] {
       if (added === "-" || deleted === "-") continue;
       if (shouldIgnoreFile(file)) continue;
 
-      current.linesAdded += parseInt(added, 10);
-      current.linesDeleted += parseInt(deleted, 10);
+      const MAX = 1_000_000;
+      current.linesAdded = Math.min(current.linesAdded + parseInt(added, 10), MAX);
+      current.linesDeleted = Math.min(current.linesDeleted + parseInt(deleted, 10), MAX);
     }
   }
 

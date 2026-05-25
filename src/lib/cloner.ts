@@ -4,18 +4,38 @@ import * as path from "path";
 import * as fs from "fs/promises";
 import { parseGitLogOutput, CommitEntry } from "./gitLog";
 
+const CLONE_TIMEOUT_MS = 60_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
+    ),
+  ]);
+}
+
 export async function cloneAndAnalyze(
   repoUrl: string,
   startDate?: string,
   endDate?: string
 ): Promise<CommitEntry[]> {
+  // Enforce HTTPS — reject any non-https URL at runtime
+  if (!repoUrl.startsWith("https://github.com/")) {
+    throw new Error("Only https://github.com URLs are allowed");
+  }
+
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "commitcut-"));
   try {
     const git = simpleGit();
     const cloneArgs = ["--no-single-branch", "--quiet"];
     // Shallow clone only when a start date is given — all-time requires full clone
     if (startDate) cloneArgs.unshift(`--shallow-since=${startDate}`);
-    await git.clone(repoUrl, tmpDir, cloneArgs);
+    await withTimeout(
+      git.clone(repoUrl, tmpDir, cloneArgs),
+      CLONE_TIMEOUT_MS,
+      `clone ${repoUrl}`
+    );
 
     const repoGit = simpleGit(tmpDir);
 

@@ -5,13 +5,33 @@ import { aggregateEntries } from "@/lib/aggregator";
 import { scoreContributors } from "@/lib/scorer";
 import { AnalyzeResponse, AnalyzeError } from "@/lib/types";
 
+const MAX_REPOS = 5;
+
+function isValidDate(s: string): boolean {
+  const d = new Date(s);
+  return !isNaN(d.getTime()) && s === d.toISOString().slice(0, 10);
+}
+
 const schema = z.object({
   repoUrls: z
-    .array(z.string().url().regex(/github\.com\/[^/]+\/[^/]+/, "must be a github.com repo URL"))
-    .min(1, "at least one repo required"),
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format").optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format").optional(),
-  prizeAmount: z.number().positive().optional(),
+    .array(
+      z.string()
+        .url("must be a valid URL")
+        .regex(/^https:\/\/github\.com\/[^/]+\/[^/]+/, "must be an https://github.com repo URL")
+    )
+    .min(1, "at least one repo required")
+    .max(MAX_REPOS, `maximum ${MAX_REPOS} repos per request`),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format")
+    .refine(isValidDate, "invalid date")
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format")
+    .refine(isValidDate, "invalid date")
+    .optional(),
+  prizeAmount: z.number().positive().finite().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -46,7 +66,7 @@ export async function POST(req: NextRequest) {
     if (contributors.length === 0) {
       return NextResponse.json<AnalyzeError>(
         {
-          error: `No commits found${startDate ? ` between ${startDate} and ${endDate}` : ""} across ${repoUrls.length} repo(s).`,
+          error: `No commits found in the specified range across ${repoUrls.length} repo(s).`,
           code: "NO_COMMITS",
         },
         { status: 404 }
@@ -68,7 +88,8 @@ export async function POST(req: NextRequest) {
       message.includes("not found") ||
       message.includes("Repository not found") ||
       message.includes("authentication") ||
-      message.includes("fatal:");
+      message.includes("fatal:") ||
+      message.includes("timed out");
 
     return NextResponse.json<AnalyzeError>(
       {

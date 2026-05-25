@@ -9,12 +9,16 @@ interface Props {
   errors: Record<number, string>;
 }
 
-const GITHUB_RE = /^https?:\/\/github\.com\/[^/]+\/[^/]+(\/.*)?$|^github\.com\/[^/]+\/[^/]+/;
+const GITHUB_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+(\/.*)?$|^github\.com\/[^/]+\/[^/]+/;
 
 const SUBPATH_RE = /\/(tree|blob|commits|issues|pulls|releases|actions|discussions)(\/.*)?$/;
 
 export function normalizeGitHubUrl(raw: string): string {
   let s = raw.trim();
+  // Auto-prefix bare github.com/... with https://
+  if (/^github\.com\//i.test(s)) s = "https://" + s;
+  // Downgrade http:// to https://
+  if (s.startsWith("http://")) s = "https://" + s.slice(7);
   // Strip .git suffix
   s = s.replace(/\.git$/, "");
   // Strip known subpaths and everything after
