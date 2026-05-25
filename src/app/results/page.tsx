@@ -427,24 +427,26 @@ export default function ResultsPage() {
       </main>
 
       <footer
-        className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap text-xs"
+        className="px-6 py-4 flex flex-col gap-2 text-xs"
         style={{
           borderTop: "1px solid var(--ink)",
           color: "var(--muted)",
           fontFamily: "Kalam, ui-sans-serif, sans-serif",
         }}
       >
-        <span>
-          Score = 50% lines added + 25% lines deleted + 25% commits. Adjust with sliders above.
-        </span>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <span>
+            Score = 50% lines added + 25% lines deleted + 25% commits. Adjust with sliders above.
+          </span>
           <button
             onClick={() => router.push("/")}
             style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", cursor: "pointer", background: "none", border: "none", textDecoration: "underline" }}
           >
             ← Home
           </button>
-          <span style={{ color: "var(--muted)" }}>made with ♥ by Arjav</span>
+        </div>
+        <div style={{ textAlign: "center", color: "var(--muted)" }}>
+          made with ♥ by Arjav
         </div>
       </footer>
     </div>
