@@ -370,13 +370,18 @@ export default function Home() {
         <span>
           Score = 50% lines added + 25% lines deleted + 25% commits. Merge commits, lock files, and generated assets ignored.
         </span>
-        <button
-          onClick={() => setDrawerOpen(true)}
-          className="underline"
-          style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", cursor: "pointer" }}
-        >
-          How it works
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="underline"
+            style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", cursor: "pointer" }}
+          >
+            How it works
+          </button>
+          <span style={{ color: "var(--muted)" }}>
+            made with ♥ by Arjav
+          </span>
+        </div>
       </footer>
 
       <HowItWorksDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />

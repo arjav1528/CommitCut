@@ -437,12 +437,15 @@ export default function ResultsPage() {
         <span>
           Score = 50% lines added + 25% lines deleted + 25% commits. Adjust with sliders above.
         </span>
-        <button
-          onClick={() => router.push("/")}
-          style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", cursor: "pointer", background: "none", border: "none", textDecoration: "underline" }}
-        >
-          ← Home
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/")}
+            style={{ color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", cursor: "pointer", background: "none", border: "none", textDecoration: "underline" }}
+          >
+            ← Home
+          </button>
+          <span style={{ color: "var(--muted)" }}>made with ♥ by Arjav</span>
+        </div>
       </footer>
     </div>
   );
