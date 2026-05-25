@@ -86,25 +86,20 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[analyze] error:", message);
 
-    const isGitMissing = message.includes("git binary not found");
-    const isCloneError =
-      isGitMissing ||
+    const isRateLimit = message.includes("rate limit");
+    const isNotFound =
       message.includes("not found") ||
       message.includes("Repository not found") ||
-      message.includes("authentication") ||
-      message.includes("fatal:") ||
-      message.includes("timed out") ||
-      message.includes("spawn") ||
-      message.includes("ENOENT");
+      message.includes("404");
 
     return NextResponse.json<AnalyzeError>(
       {
-        error: isGitMissing
-          ? "Server is missing the git binary. Contact support."
-          : isCloneError
-          ? "Could not clone one or more repos. Make sure they are public and the URL is correct."
+        error: isRateLimit
+          ? message
+          : isNotFound
+          ? "Repository not found. Make sure it is public and the URL is correct."
           : "Analysis failed. Please try again.",
-        code: isCloneError ? "CLONE_FAILED" : "UNKNOWN",
+        code: isNotFound || isRateLimit ? "CLONE_FAILED" : "UNKNOWN",
       },
       { status: 500 }
     );
