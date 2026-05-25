@@ -84,16 +84,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(response);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error("[analyze] error:", message);
+
+    const isGitMissing = message.includes("git binary not found");
     const isCloneError =
+      isGitMissing ||
       message.includes("not found") ||
       message.includes("Repository not found") ||
       message.includes("authentication") ||
       message.includes("fatal:") ||
-      message.includes("timed out");
+      message.includes("timed out") ||
+      message.includes("spawn") ||
+      message.includes("ENOENT");
 
     return NextResponse.json<AnalyzeError>(
       {
-        error: isCloneError
+        error: isGitMissing
+          ? "Server is missing the git binary. Contact support."
+          : isCloneError
           ? "Could not clone one or more repos. Make sure they are public and the URL is correct."
           : "Analysis failed. Please try again.",
         code: isCloneError ? "CLONE_FAILED" : "UNKNOWN",
@@ -102,3 +110,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+// Allow up to 300s on platforms that support it (Vercel Pro / Railway / Render)
+export const maxDuration = 300;

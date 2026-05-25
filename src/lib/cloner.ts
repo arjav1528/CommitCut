@@ -1,8 +1,20 @@
 import { simpleGit } from "simple-git";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { parseGitLogOutput, CommitEntry } from "./gitLog";
+
+const execFileAsync = promisify(execFile);
+
+async function checkGitAvailable(): Promise<void> {
+  try {
+    await execFileAsync("git", ["--version"]);
+  } catch {
+    throw new Error("git binary not found in PATH — cannot run on this platform");
+  }
+}
 
 const CLONE_TIMEOUT_MS = 60_000;
 
@@ -24,6 +36,8 @@ export async function cloneAndAnalyze(
   if (!repoUrl.startsWith("https://github.com/")) {
     throw new Error("Only https://github.com URLs are allowed");
   }
+
+  await checkGitAvailable();
 
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "commitcut-"));
   try {
