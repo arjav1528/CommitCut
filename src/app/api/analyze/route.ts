@@ -12,7 +12,6 @@ const schema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format").optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "use YYYY-MM-DD format").optional(),
   prizeAmount: z.number().positive().optional(),
-  currency: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {

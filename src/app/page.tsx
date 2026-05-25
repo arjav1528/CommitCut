@@ -7,14 +7,11 @@ import { RepoInputList, validateRepo } from "@/components/RepoInputList";
 import { HowItWorksDrawer } from "@/components/HowItWorksDrawer";
 import { DateRangePicker } from "@/components/DateRangePicker";
 
-const CURRENCIES = ["USD", "EUR", "GBP", "INR", "JPY", "CAD", "AUD"];
-
 const DEMO = {
   repos: ["https://github.com/arjav1528/MongoLite"],
   start: "2008-01-01",
   end: new Date().toISOString().slice(0, 10),
   prize: "1000",
-  currency: "USD",
 };
 
 const seclabelStyle: React.CSSProperties = {
@@ -76,7 +73,6 @@ export default function Home() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [prizeAmount, setPrizeAmount] = useState<string>("");
-  const [currency, setCurrency] = useState("USD");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [allTime, setAllTime] = useState(false);
 
@@ -86,7 +82,6 @@ export default function Home() {
     setEndDate("");
     setAllTime(true);
     setPrizeAmount(DEMO.prize);
-    setCurrency(DEMO.currency);
     setRepoErrors({});
   }
 
@@ -112,7 +107,6 @@ export default function Home() {
       params.set("end", endDate);
     }
     if (prizeAmount) params.set("prize", prizeAmount);
-    if (currency !== "USD") params.set("currency", currency);
     router.push(`/results?${params.toString()}`);
   }
 
@@ -128,16 +122,6 @@ export default function Home() {
       : null;
   const filledRepos = repos.filter((r) => r.trim());
   const prizeNum = prizeAmount ? parseFloat(prizeAmount) : 0;
-
-  const inputStyle: React.CSSProperties = {
-    background: "#fff",
-    border: "2px solid var(--ink)",
-    borderRadius: 10,
-    color: "var(--muted)",
-    padding: "7px 10px",
-    fontSize: 14,
-    fontFamily: "Kalam, ui-sans-serif, sans-serif",
-  };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--paper)" }}>
@@ -267,41 +251,27 @@ export default function Home() {
                           (optional)
                         </span>
                       </SectionLabel>
-                      <div className="flex gap-3">
-                        <div
-                          className="flex items-center flex-1 overflow-hidden"
+                      <div
+                        style={{
+                          border: "2px solid var(--ink)",
+                          borderRadius: 10,
+                          background: "#fff",
+                        }}
+                      >
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="0.00"
+                          value={prizeAmount}
+                          onChange={(e) => setPrizeAmount(e.target.value)}
+                          aria-label="Prize amount"
+                          className="w-full py-2 px-3 text-sm bg-transparent"
                           style={{
-                            border: "2px solid var(--ink)",
-                            borderRadius: 10,
-                            background: "#fff",
+                            color: "var(--ink)",
+                            outline: "none",
+                            fontFamily: "Kalam, ui-sans-serif, sans-serif",
                           }}
-                        >
-                          <span className="px-3 text-sm" style={{ color: "var(--muted)" }}>$</span>
-                          <input
-                            type="number"
-                            min={0}
-                            placeholder="0.00"
-                            value={prizeAmount}
-                            onChange={(e) => setPrizeAmount(e.target.value)}
-                            aria-label="Prize amount"
-                            className="flex-1 py-2 pr-3 text-sm bg-transparent"
-                            style={{
-                              color: "var(--ink)",
-                              outline: "none",
-                              fontFamily: "Kalam, ui-sans-serif, sans-serif",
-                            }}
-                          />
-                        </div>
-                        <select
-                          value={currency}
-                          onChange={(e) => setCurrency(e.target.value)}
-                          aria-label="Currency"
-                          style={{ ...inputStyle, minWidth: 80, color: "var(--ink)" }}
-                        >
-                          {CURRENCIES.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                        </select>
+                        />
                       </div>
                     </div>
                   </div>
@@ -338,7 +308,7 @@ export default function Home() {
                       </div>
                       {prizeNum > 0 && (
                         <div style={{ fontSize: 13, fontFamily: "Kalam, ui-sans-serif, sans-serif", color: "var(--ink)" }}>
-                          ${prizeNum.toLocaleString()} total
+                          {prizeNum.toLocaleString()} total
                         </div>
                       )}
                       <div
@@ -349,7 +319,7 @@ export default function Home() {
                       </div>
                       {prizeNum > 0 && filledRepos.length > 0 && (
                         <div style={{ fontSize: 13, fontFamily: "Kalam, ui-sans-serif, sans-serif", color: "var(--ink)", fontWeight: 700 }}>
-                          ${(prizeNum / filledRepos.length).toFixed(0)} × {filledRepos.length}
+                          {(prizeNum / filledRepos.length).toFixed(0)} × {filledRepos.length}
                         </div>
                       )}
                       <div style={{ fontSize: 10, color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", marginTop: 2 }}>

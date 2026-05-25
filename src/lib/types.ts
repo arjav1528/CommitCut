@@ -3,7 +3,6 @@ export interface AnalyzeRequest {
   startDate: string;
   endDate: string;
   prizeAmount?: number;
-  currency?: string;
 }
 
 export interface ContributorStats {

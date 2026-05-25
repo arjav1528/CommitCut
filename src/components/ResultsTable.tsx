@@ -6,7 +6,6 @@ import { ContributorHeatmap } from "@/components/ContributorHeatmap";
 
 interface Props {
   contributors: ContributorStats[];
-  currency?: string;
   excluded: Set<string>;
   onExclude: (email: string) => void;
   startDate: string;
@@ -96,14 +95,14 @@ function Avatar({
   );
 }
 
-function PrizeCell({ value, currency }: { value: number; currency: string }) {
+function PrizeCell({ value }: { value: number }) {
   const animated = useCountUp(value, 700);
   return (
     <span
       className="text-right font-semibold"
       style={{ fontFamily: "Kalam, ui-sans-serif, sans-serif", color: "var(--ink)" }}
     >
-      {currency} {animated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {animated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
     </span>
   );
 }
@@ -157,7 +156,6 @@ function TableRow({
   c,
   i,
   hasPrize,
-  currency,
   onExclude,
   startDate,
   endDate,
@@ -165,7 +163,6 @@ function TableRow({
   c: ContributorStats;
   i: number;
   hasPrize: boolean;
-  currency: string;
   onExclude: (email: string) => void;
   startDate: string;
   endDate: string;
@@ -304,7 +301,7 @@ function TableRow({
           {c.percentage}%
         </span>
         {hasPrize && c.prizeShare !== undefined && (
-          <PrizeCell value={c.prizeShare} currency={currency} />
+          <PrizeCell value={c.prizeShare} />
         )}
         {hasPrize && c.prizeShare === undefined && (
           <span />
@@ -348,7 +345,7 @@ function TableRow({
   );
 }
 
-export function ResultsTable({ contributors, currency = "USD", excluded, onExclude, startDate, endDate }: Props) {
+export function ResultsTable({ contributors, excluded, onExclude, startDate, endDate }: Props) {
   const hasPrize = contributors.some((c) => c.prizeShare !== undefined);
 
   return (
@@ -379,7 +376,7 @@ export function ResultsTable({ contributors, currency = "USD", excluded, onExclu
         <span className="text-right" style={{ color: "var(--mint)" }}>+Lines</span>
         <span className="text-right" style={{ color: "var(--coral)" }}>-Lines</span>
         <span className="text-right">Share</span>
-        {hasPrize && <span className="text-right">{currency}</span>}
+        {hasPrize && <span className="text-right">Prize</span>}
         <span />
       </div>
 
@@ -389,7 +386,6 @@ export function ResultsTable({ contributors, currency = "USD", excluded, onExclu
           c={c}
           i={i}
           hasPrize={hasPrize}
-          currency={currency}
           onExclude={onExclude}
           startDate={startDate}
           endDate={endDate}

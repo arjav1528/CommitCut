@@ -5,7 +5,6 @@ import { ContributorStats } from "@/lib/types";
 
 interface Props {
   contributors: ContributorStats[];
-  currency?: string;
 }
 
 function useCountUp(target: number, duration = 800): number {
@@ -102,7 +101,6 @@ function Avatar({
 interface PodiumCardProps {
   contributor: ContributorStats;
   rank: 1 | 2 | 3;
-  currency: string;
 }
 
 const RANK_CONFIG = {
@@ -129,7 +127,7 @@ const RANK_CONFIG = {
   },
 };
 
-function PodiumCard({ contributor: c, rank, currency }: PodiumCardProps) {
+function PodiumCard({ contributor: c, rank }: PodiumCardProps) {
   const cfg = RANK_CONFIG[rank];
   const animatedPrize = useCountUp(c.prizeShare ?? 0, 900);
   const animatedPct = useCountUp(c.percentage, 700);
@@ -213,7 +211,7 @@ function PodiumCard({ contributor: c, rank, currency }: PodiumCardProps) {
                 marginTop: 2,
               }}
             >
-              {currency} {animatedPrize.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {animatedPrize.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           )}
         </div>
@@ -243,7 +241,7 @@ function PodiumCard({ contributor: c, rank, currency }: PodiumCardProps) {
   );
 }
 
-export function PodiumView({ contributors, currency = "USD" }: Props) {
+export function PodiumView({ contributors }: Props) {
   const top3 = contributors.slice(0, 3);
   if (top3.length === 0) return null;
 
@@ -262,7 +260,6 @@ export function PodiumView({ contributors, currency = "USD" }: Props) {
           key={c.email}
           contributor={c}
           rank={(i + 1) as 1 | 2 | 3}
-          currency={currency}
         />
       ))}
     </div>

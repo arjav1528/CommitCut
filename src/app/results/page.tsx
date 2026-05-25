@@ -49,20 +49,20 @@ function clientReScore(
     .sort((a, b) => b.percentage - a.percentage);
 }
 
-function buildMarkdown(contributors: ContributorStats[], currency: string): string {
+function buildMarkdown(contributors: ContributorStats[]): string {
   const hasP = contributors[0]?.prizeShare !== undefined;
   const header = `| Name | Email | Commits | +Lines | -Lines | Share |${hasP ? " Prize |" : ""}`;
   const sep = `|------|-------|---------|--------|--------|-------|${hasP ? "-------|" : ""}`;
   const rows = contributors.map(
     (c) =>
-      `| ${c.name} | ${c.email} | ${c.commits} | +${c.linesAdded} | -${c.linesDeleted} | ${c.percentage}% |${c.prizeShare !== undefined ? ` ${currency} ${c.prizeShare.toFixed(2)} |` : ""}`
+      `| ${c.name} | ${c.email} | ${c.commits} | +${c.linesAdded} | -${c.linesDeleted} | ${c.percentage}% |${c.prizeShare !== undefined ? ` ${c.prizeShare.toFixed(2)} |` : ""}`
   );
   return [header, sep, ...rows].join("\n");
 }
 
-function buildCsv(contributors: ContributorStats[], currency: string): string {
+function buildCsv(contributors: ContributorStats[]): string {
   const hasP = contributors[0]?.prizeShare !== undefined;
-  const header = ["Name", "Email", "Commits", "+Lines", "-Lines", "Share %", hasP ? currency : ""]
+  const header = ["Name", "Email", "Commits", "+Lines", "-Lines", "Share %", hasP ? "Prize" : ""]
     .filter(Boolean)
     .join(",");
   const rows = contributors.map((c) =>
@@ -83,7 +83,6 @@ export default function ResultsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [prizeParam, setPrizeParam] = useState<string>("");
-  const [currency, setCurrency] = useState("USD");
 
   // UI state
   const [pageState, setPageState] = useState<PageState>("loading");
@@ -103,7 +102,6 @@ export default function ResultsPage() {
     const start = params.get("start") ?? "";
     const end = params.get("end") ?? "";
     const prize = params.get("prize") ?? "";
-    const curr = params.get("currency") ?? "USD";
 
     const repos = reposRaw.split(",").filter(Boolean);
 
@@ -116,9 +114,8 @@ export default function ResultsPage() {
     setStartDate(start);
     setEndDate(end);
     setPrizeParam(prize);
-    setCurrency(curr);
 
-    const body: Record<string, unknown> = { repoUrls: repos, currency: curr };
+    const body: Record<string, unknown> = { repoUrls: repos };
     if (start) body.startDate = start;
     if (end) body.endDate = end;
     if (prize) body.prizeAmount = parseFloat(prize);
@@ -159,14 +156,14 @@ export default function ResultsPage() {
 
   function copyMarkdown() {
     if (!displayContributors.length) return;
-    navigator.clipboard.writeText(buildMarkdown(displayContributors, currency));
+    navigator.clipboard.writeText(buildMarkdown(displayContributors));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   function exportCsv() {
     if (!displayContributors.length) return;
-    const csv = buildCsv(displayContributors, currency);
+    const csv = buildCsv(displayContributors);
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -182,7 +179,7 @@ export default function ResultsPage() {
     setTimeout(() => setShareCopied(false), 2000);
   }
 
-  const summaryChip = `${repoUrls.length} repo${repoUrls.length !== 1 ? "s" : ""} · ${startDate} → ${endDate}${prizeNum ? ` · $${prizeNum.toLocaleString()}` : ""}`;
+  const summaryChip = `${repoUrls.length} repo${repoUrls.length !== 1 ? "s" : ""} · ${startDate} → ${endDate}${prizeNum ? ` · ${prizeNum.toLocaleString()}` : ""}`;
 
   const btnBase: React.CSSProperties = {
     border: "2px solid var(--ink)",
@@ -319,7 +316,7 @@ export default function ResultsPage() {
                     Here&apos;s the cut
                     {displayContributors[0]?.prizeShare !== undefined && (
                       <span style={{ color: "var(--accent)" }}>
-                        {" "}· {currency} {(prizeNum ?? 0).toLocaleString()}
+                        {" "}· {(prizeNum ?? 0).toLocaleString()}
                       </span>
                     )}
                   </h1>
@@ -357,7 +354,7 @@ export default function ResultsPage() {
                   animationDelay: "0.05s",
                 }}
               >
-                <PodiumView contributors={displayContributors} currency={currency} />
+                <PodiumView contributors={displayContributors} />
               </div>
 
               {/* Weight sliders */}
@@ -384,7 +381,6 @@ export default function ResultsPage() {
               <div className="row-in" style={{ animationDelay: "0.15s" }}>
                 <ResultsTable
                   contributors={displayContributors}
-                  currency={currency}
                   excluded={excluded}
                   onExclude={(email) => setExcluded((prev) => new Set([...prev, email]))}
                   startDate={results.dateRange.start}
