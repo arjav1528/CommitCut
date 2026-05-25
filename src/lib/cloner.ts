@@ -28,11 +28,12 @@ export async function cloneAndAnalyze(
       "--no-merges",
       `--after=${startDate}`,
       `--before=${endDate} 23:59:59`,
-      `--pretty=format:COMMIT|%H|%ae|%an`,
+      `--pretty=format:COMMIT|%H|%ae|%an|%cs`,
       "--diff-filter=AM",
     ]);
 
-    return parseGitLogOutput(logOutput);
+    const entries = parseGitLogOutput(logOutput);
+    return entries.map(e => ({ ...e, repoUrl }));
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }

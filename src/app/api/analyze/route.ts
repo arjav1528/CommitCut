@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     );
 
     const merged = aggregateEntries(allEntries);
-    const contributors = scoreContributors(merged, prizeAmount);
+    const { contributors, timeline } = scoreContributors(merged, prizeAmount);
 
     if (contributors.length === 0) {
       return NextResponse.json<AnalyzeError>(
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       totalCommits: merged.length,
       repoCount: repoUrls.length,
       dateRange: { start: startDate, end: endDate },
+      timeline,
     };
 
     return NextResponse.json(response);

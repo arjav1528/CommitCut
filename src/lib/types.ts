@@ -15,6 +15,10 @@ export interface ContributorStats {
   rawScore: number;
   percentage: number;
   prizeShare?: number;
+  githubUsername?: string;
+  githubAvatarUrl?: string;
+  repoBreakdown?: Record<string, { commits: number; linesAdded: number; linesDeleted: number }>;
+  commitDates?: string[]; // YYYY-MM-DD strings
 }
 
 export interface AnalyzeResponse {
@@ -22,6 +26,7 @@ export interface AnalyzeResponse {
   totalCommits: number;
   repoCount: number;
   dateRange: { start: string; end: string };
+  timeline: { date: string; count: number }[]; // daily commit counts across ALL contributors, sorted by date
 }
 
 export interface AnalyzeError {

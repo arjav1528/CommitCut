@@ -6,9 +6,11 @@ export interface CommitEntry {
   authorName: string;
   linesAdded: number;
   linesDeleted: number;
+  date: string; // YYYY-MM-DD
+  repoUrl?: string;
 }
 
-const COMMIT_HEADER = /^COMMIT\|([^|]+)\|([^|]+)\|(.+)$/;
+const COMMIT_HEADER = /^COMMIT\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)$/;
 const NUMSTAT_LINE = /^(\d+|-)\t(\d+|-)\t(.+)$/;
 
 export function parseGitLogOutput(output: string): CommitEntry[] {
@@ -23,6 +25,7 @@ export function parseGitLogOutput(output: string): CommitEntry[] {
         hash: headerMatch[1],
         authorEmail: headerMatch[2].trim().toLowerCase(),
         authorName: headerMatch[3].trim(),
+        date: headerMatch[4].trim(),
         linesAdded: 0,
         linesDeleted: 0,
       };
