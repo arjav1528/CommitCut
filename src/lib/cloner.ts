@@ -1,3 +1,4 @@
+import ignore, { Ignore } from "ignore";
 import { CommitEntry } from "./gitLog";
 import { shouldIgnoreFile } from "./filter";
 import { complexityOfPatch } from "./complexity";
@@ -90,6 +91,80 @@ async function runInBatches<T, R>(
     results.push(...(await Promise.all(batch.map(fn))));
   }
   return results;
+}
+
+// Wrapper around Ignore.ignores() that never throws on edge-case paths
+function safeIgnores(ig: Ignore, path: string): boolean {
+  if (!path || path.startsWith("/")) return false;
+  try {
+    return ig.ignores(path);
+  } catch {
+    return false;
+  }
+}
+
+// Fetch all .gitignore files in the repo (root + all subdirectories) and return
+// a compiled Ignore instance. Runs in parallel; silently degrades on any failure.
+async function fetchGitignoreRules(
+  owner: string,
+  repo: string,
+  userToken?: string
+): Promise<Ignore> {
+  const ig = ignore();
+  try {
+    // Single tree fetch gives us every path in the repo
+    const treeRes = await ghFetch(
+      `/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
+      userToken
+    );
+    const treeData = (await treeRes.json()) as {
+      tree?: { path: string; type: string }[];
+    };
+
+    const gitignoreItems = (treeData.tree ?? []).filter(
+      (item) => item.type === "blob" && item.path.endsWith(".gitignore")
+    );
+
+    // Fetch each .gitignore file in parallel (cap at 30 for safety)
+    await Promise.all(
+      gitignoreItems.slice(0, 30).map(async (item) => {
+        try {
+          const res = await ghFetch(
+            `/repos/${owner}/${repo}/contents/${item.path}`,
+            userToken
+          );
+          const data = (await res.json()) as { content?: string; encoding?: string };
+          if (data.content && data.encoding === "base64") {
+            // GitHub embeds newlines in base64 — strip them before decoding
+            const content = Buffer.from(data.content.replace(/\s/g, ""), "base64").toString("utf-8");
+            const dir = item.path.includes("/")
+              ? item.path.slice(0, item.path.lastIndexOf("/"))
+              : "";
+            const rules = content
+              .split("\n")
+              .map((l) => l.trim())
+              .filter((l) => l && !l.startsWith("#"));
+
+            if (dir) {
+              // Prefix each rule with the subdirectory so it matches relative to root
+              ig.add(
+                rules.map((r) =>
+                  r.startsWith("!") ? `!${dir}/${r.slice(1)}` : `${dir}/${r}`
+                )
+              );
+            } else {
+              ig.add(rules);
+            }
+          }
+        } catch {
+          // individual file fetch failed — skip
+        }
+      })
+    );
+  } catch {
+    // tree fetch failed — proceed with no gitignore rules
+  }
+  return ig;
 }
 
 async function fetchDefaultBranch(owner: string, repo: string, userToken?: string): Promise<string> {
@@ -238,7 +313,11 @@ export async function cloneAndAnalyze(
 
   const { owner, repo } = parseOwnerRepo(repoUrl);
 
-  const commits = await fetchAllCommitShas(owner, repo, startDate, endDate, userToken);
+  // Fetch commit list and gitignore rules in parallel
+  const [commits, ig] = await Promise.all([
+    fetchAllCommitShas(owner, repo, startDate, endDate, userToken),
+    fetchGitignoreRules(owner, repo, userToken),
+  ]);
 
   const details = await runInBatches(
     commits,
@@ -250,7 +329,10 @@ export async function cloneAndAnalyze(
     let totalAdded = 0;
     let totalDeleted = 0;
     const codeFiles = (d.files ?? []).filter(
-      (f) => (f.status === "added" || f.status === "modified") && !shouldIgnoreFile(f.filename)
+      (f) =>
+        (f.status === "added" || f.status === "modified") &&
+        !shouldIgnoreFile(f.filename) &&
+        !safeIgnores(ig, f.filename)
     );
     for (const file of codeFiles) {
       totalAdded = Math.min(totalAdded + (file.additions ?? 0), MAX_LINE_COUNT);
