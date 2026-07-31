@@ -10,6 +10,8 @@ interface Props {
   onExclude: (email: string) => void;
   startDate: string;
   endDate: string;
+  mergeMap: Map<string, string>;
+  onMerge: (absorbedEmail: string, canonicalEmail: string) => void;
 }
 
 function useCountUp(target: number, duration = 700): number {
@@ -159,6 +161,8 @@ function TableRow({
   onExclude,
   startDate,
   endDate,
+  allContributors,
+  onMerge,
 }: {
   c: ContributorStats;
   i: number;
@@ -166,9 +170,13 @@ function TableRow({
   onExclude: (email: string) => void;
   startDate: string;
   endDate: string;
+  allContributors: ContributorStats[];
+  onMerge: (absorbedEmail: string, canonicalEmail: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [mergePickerOpen, setMergePickerOpen] = useState(false);
   const hasBreakdown = c.repoBreakdown && Object.keys(c.repoBreakdown).length > 1;
+  const mergeTargets = allContributors.filter((o) => o.email !== c.email);
 
   return (
     <div
@@ -326,6 +334,83 @@ function TableRow({
                 endDate={endDate}
               />
             )}
+            {/* Merge with another contributor */}
+            {expanded && mergeTargets.length > 0 && (
+              <div style={{ marginTop: 6, position: "relative" }}>
+                <button
+                  onClick={() => setMergePickerOpen((p) => !p)}
+                  style={{
+                    background: "none",
+                    border: "1px dashed var(--muted)",
+                    borderRadius: 6,
+                    padding: "2px 8px",
+                    fontSize: 10,
+                    fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                    color: "var(--muted)",
+                    cursor: "pointer",
+                  }}
+                >
+                  ↔ Merge into…
+                </button>
+                {mergePickerOpen && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 4px)",
+                      left: 0,
+                      zIndex: 20,
+                      background: "var(--paper)",
+                      border: "2px solid var(--ink)",
+                      borderRadius: 10,
+                      boxShadow: "3px 3px 0 0 rgba(0,0,0,.8)",
+                      minWidth: 200,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "6px 10px",
+                        fontSize: 10,
+                        fontFamily: "var(--font-caveat), Caveat, cursive",
+                        fontWeight: 700,
+                        borderBottom: "1px solid var(--ink)",
+                        color: "var(--muted)",
+                      }}
+                    >
+                      Merge <span style={{ color: "var(--ink)" }}>{c.name}</span> into:
+                    </div>
+                    {mergeTargets.map((target) => (
+                      <button
+                        key={target.email}
+                        onClick={() => {
+                          onMerge(c.email, target.email);
+                          setMergePickerOpen(false);
+                          setExpanded(false);
+                        }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          background: "none",
+                          border: "none",
+                          padding: "6px 10px",
+                          fontSize: 12,
+                          fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                          cursor: "pointer",
+                          color: "var(--ink)",
+                          borderTop: "1px dashed rgba(0,0,0,0.1)",
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--paper-2)"; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+                      >
+                        <span style={{ fontWeight: 600 }}>{target.name}</span>
+                        <span style={{ color: "var(--muted)", fontSize: 10, marginLeft: 6 }}>{target.email}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -398,8 +483,9 @@ function TableRow({
   );
 }
 
-export function ResultsTable({ contributors, excluded, onExclude, startDate, endDate }: Props) {
+export function ResultsTable({ contributors, excluded, onExclude, startDate, endDate, mergeMap: _mergeMap, onMerge }: Props) {
   const hasPrize = contributors.some((c) => c.prizeShare !== undefined);
+  const visible = contributors.filter(c => !excluded.has(c.email));
 
   return (
     <div
@@ -433,7 +519,7 @@ export function ResultsTable({ contributors, excluded, onExclude, startDate, end
         <span />
       </div>
 
-      {contributors.filter(c => !excluded.has(c.email)).map((c, i) => (
+      {visible.map((c, i) => (
         <TableRow
           key={c.email}
           c={c}
@@ -442,6 +528,8 @@ export function ResultsTable({ contributors, excluded, onExclude, startDate, end
           onExclude={onExclude}
           startDate={startDate}
           endDate={endDate}
+          allContributors={visible}
+          onMerge={onMerge}
         />
       ))}
 

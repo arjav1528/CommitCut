@@ -13,6 +13,64 @@ import { Confetti } from "@/components/Confetti";
 import { AnalyzeResponse, AnalyzeError, ContributorStats } from "@/lib/types";
 import { CommitGraph } from "@/components/CommitGraph";
 
+// mergeMap: absorbed email → canonical email
+// Absorbed contributor's stats fold into the canonical row.
+function applyMerges(
+  contributors: ContributorStats[],
+  mergeMap: Map<string, string>
+): ContributorStats[] {
+  if (mergeMap.size === 0) return contributors;
+
+  // Build canonical set first (all non-absorbed rows, deep-cloned)
+  const canonicalMap = new Map<string, ContributorStats>();
+  for (const c of contributors) {
+    if (!mergeMap.has(c.email)) {
+      canonicalMap.set(c.email, { ...c, repoBreakdown: c.repoBreakdown ? { ...c.repoBreakdown } : undefined });
+    }
+  }
+
+  // Fold absorbed rows into their canonical target
+  for (const c of contributors) {
+    const targetEmail = mergeMap.get(c.email);
+    if (!targetEmail) continue;
+    const target = canonicalMap.get(targetEmail);
+    if (!target) continue;
+
+    target.commits += c.commits;
+    target.linesAdded += c.linesAdded;
+    target.linesDeleted += c.linesDeleted;
+    if (c.commitDates) target.commitDates = [...(target.commitDates ?? []), ...c.commitDates];
+    if (c.repoBreakdown) {
+      target.repoBreakdown = target.repoBreakdown ?? {};
+      for (const [repo, s] of Object.entries(c.repoBreakdown)) {
+        if (target.repoBreakdown[repo]) {
+          target.repoBreakdown[repo] = {
+            commits: target.repoBreakdown[repo].commits + s.commits,
+            linesAdded: target.repoBreakdown[repo].linesAdded + s.linesAdded,
+            linesDeleted: target.repoBreakdown[repo].linesDeleted + s.linesDeleted,
+          };
+        } else {
+          target.repoBreakdown[repo] = { ...s };
+        }
+      }
+    }
+    // Average quality metrics from both sides
+    if (c.avgComplexity !== undefined)
+      target.avgComplexity = target.avgComplexity !== undefined
+        ? (target.avgComplexity + c.avgComplexity) / 2 : c.avgComplexity;
+    if (c.churnScore !== undefined)
+      target.churnScore = target.churnScore !== undefined
+        ? (target.churnScore + c.churnScore) / 2 : c.churnScore;
+    if (c.survivalRate !== undefined)
+      target.survivalRate = target.survivalRate !== undefined
+        ? (target.survivalRate + c.survivalRate) / 2 : c.survivalRate;
+    if (c.linesAlive !== undefined)
+      target.linesAlive = (target.linesAlive ?? 0) + c.linesAlive;
+  }
+
+  return Array.from(canonicalMap.values());
+}
+
 function clientReScore(
   contributors: ContributorStats[],
   weights: WeightState,
@@ -106,6 +164,8 @@ export default function ResultsPage() {
     complexity: 0, churn: 0, survival: 0,
   });
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  // mergeMap: absorbed email → canonical email (client-side identity resolution)
+  const [mergeMap, setMergeMap] = useState<Map<string, string>>(new Map());
   const [confettiActive, setConfettiActive] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -170,8 +230,21 @@ export default function ResultsPage() {
 
   const displayContributors = useMemo(() => {
     if (!results) return [];
-    return clientReScore(results.contributors, weights, excluded, prizeNum);
-  }, [results, weights, excluded, prizeNum]);
+    const merged = applyMerges(results.contributors, mergeMap);
+    return clientReScore(merged, weights, excluded, prizeNum);
+  }, [results, weights, excluded, prizeNum, mergeMap]);
+
+  function mergeContributors(absorbedEmail: string, canonicalEmail: string) {
+    setMergeMap((prev) => {
+      const next = new Map(prev);
+      next.set(absorbedEmail, canonicalEmail);
+      return next;
+    });
+  }
+
+  function unmergeAll() {
+    setMergeMap(new Map());
+  }
 
   function copyMarkdown() {
     if (!displayContributors.length) return;
@@ -474,27 +547,48 @@ export default function ResultsPage() {
                   onExclude={(email) => setExcluded((prev) => new Set([...prev, email]))}
                   startDate={results.dateRange.start}
                   endDate={results.dateRange.end}
+                  mergeMap={mergeMap}
+                  onMerge={mergeContributors}
                 />
               </div>
 
-              {/* Restore excluded */}
-              {excluded.size > 0 && (
-                <div style={{ textAlign: "center" }}>
-                  <button
-                    onClick={() => setExcluded(new Set())}
-                    style={{
-                      border: "2px dashed var(--muted)",
-                      borderRadius: 999,
-                      padding: "3px 12px",
-                      fontSize: 12,
-                      fontFamily: "Kalam, ui-sans-serif, sans-serif",
-                      background: "transparent",
-                      color: "var(--muted)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    ↩ Restore {excluded.size} excluded
-                  </button>
+              {/* Restore / unmerge actions */}
+              {(excluded.size > 0 || mergeMap.size > 0) && (
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                  {excluded.size > 0 && (
+                    <button
+                      onClick={() => setExcluded(new Set())}
+                      style={{
+                        border: "2px dashed var(--muted)",
+                        borderRadius: 999,
+                        padding: "3px 12px",
+                        fontSize: 12,
+                        fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                        background: "transparent",
+                        color: "var(--muted)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ↩ Restore {excluded.size} excluded
+                    </button>
+                  )}
+                  {mergeMap.size > 0 && (
+                    <button
+                      onClick={unmergeAll}
+                      style={{
+                        border: "2px dashed var(--muted)",
+                        borderRadius: 999,
+                        padding: "3px 12px",
+                        fontSize: 12,
+                        fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                        background: "transparent",
+                        color: "var(--muted)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ↩ Unmerge {mergeMap.size} merge{mergeMap.size > 1 ? "s" : ""}
+                    </button>
+                  )}
                 </div>
               )}
 
