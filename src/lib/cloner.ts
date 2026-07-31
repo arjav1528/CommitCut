@@ -36,9 +36,18 @@ interface GHCommitListItem {
 
 interface GHCommitDetail {
   sha: string;
-  commit: { author: { name: string; email: string; date: string } };
+  commit: { author: { name: string; email: string; date: string }; message: string };
   stats: { additions: number; deletions: number };
   files: { filename: string; additions: number; deletions: number; status: string; patch?: string }[];
+}
+
+function parseCoAuthors(message: string): { name: string; email: string }[] {
+  return message
+    .split("\n")
+    .flatMap((line) => {
+      const m = line.match(/^Co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/i);
+      return m ? [{ name: m[1].trim(), email: m[2].trim().toLowerCase() }] : [];
+    });
 }
 
 async function fetchAllCommitShas(
@@ -237,15 +246,15 @@ export async function cloneAndAnalyze(
     10
   );
 
-  return details.map((d): CommitEntry => {
-    let linesAdded = 0;
-    let linesDeleted = 0;
+  return details.flatMap((d): CommitEntry[] => {
+    let totalAdded = 0;
+    let totalDeleted = 0;
     const codeFiles = (d.files ?? []).filter(
       (f) => (f.status === "added" || f.status === "modified") && !shouldIgnoreFile(f.filename)
     );
     for (const file of codeFiles) {
-      linesAdded = Math.min(linesAdded + (file.additions ?? 0), MAX_LINE_COUNT);
-      linesDeleted = Math.min(linesDeleted + (file.deletions ?? 0), MAX_LINE_COUNT);
+      totalAdded = Math.min(totalAdded + (file.additions ?? 0), MAX_LINE_COUNT);
+      totalDeleted = Math.min(totalDeleted + (file.deletions ?? 0), MAX_LINE_COUNT);
     }
 
     const fileComplexities = codeFiles
@@ -256,16 +265,26 @@ export async function cloneAndAnalyze(
         ? fileComplexities.reduce((a, b) => a + b, 0) / fileComplexities.length
         : undefined;
 
-    return {
+    const coAuthors = parseCoAuthors(d.commit.message ?? "");
+    const allAuthors = [
+      { name: d.commit.author.name.trim(), email: d.commit.author.email.trim().toLowerCase() },
+      ...coAuthors,
+    ];
+    // Split lines equally; each author gets 1 commit credit
+    const share = allAuthors.length;
+    const filesChanged = codeFiles.map((f) => f.filename);
+    const date = d.commit.author.date.slice(0, 10);
+
+    return allAuthors.map((author) => ({
       hash: d.sha,
-      authorEmail: d.commit.author.email.trim().toLowerCase(),
-      authorName: d.commit.author.name.trim(),
-      date: d.commit.author.date.slice(0, 10),
-      linesAdded,
-      linesDeleted,
+      authorEmail: author.email,
+      authorName: author.name,
+      date,
+      linesAdded: Math.round(totalAdded / share),
+      linesDeleted: Math.round(totalDeleted / share),
       repoUrl,
       complexity,
-      filesChanged: codeFiles.map((f) => f.filename),
-    };
+      filesChanged,
+    }));
   });
 }
