@@ -24,18 +24,28 @@ function clientReScore(
   const maxAdded = Math.max(...active.map((c) => c.linesAdded), 1);
   const maxDeleted = Math.max(...active.map((c) => c.linesDeleted), 1);
   const maxCommits = Math.max(...active.map((c) => c.commits), 1);
-  const wSum = weights.linesAdded + weights.linesDeleted + weights.commits || 1;
+  const maxComplexity = Math.max(...active.map((c) => c.avgComplexity ?? 0), 1);
+  const maxChurn = Math.max(...active.map((c) => c.churnScore ?? 0), 1);
+  const wSum =
+    weights.linesAdded + weights.linesDeleted + weights.commits +
+    weights.complexity + weights.churn + weights.survival || 1;
   const wn = {
-    linesAdded: weights.linesAdded / wSum,
+    linesAdded:  weights.linesAdded  / wSum,
     linesDeleted: weights.linesDeleted / wSum,
-    commits: weights.commits / wSum,
+    commits:     weights.commits     / wSum,
+    complexity:  weights.complexity  / wSum,
+    churn:       weights.churn       / wSum,
+    survival:    weights.survival    / wSum,
   };
   const scored = active.map((c) => ({
     ...c,
     rawScore:
-      wn.linesAdded * (c.linesAdded / maxAdded) +
+      wn.linesAdded  * (c.linesAdded  / maxAdded)   +
       wn.linesDeleted * (c.linesDeleted / maxDeleted) +
-      wn.commits * (c.commits / maxCommits),
+      wn.commits     * (c.commits     / maxCommits)  +
+      wn.complexity  * ((c.avgComplexity ?? 0) / maxComplexity) +
+      wn.churn       * ((c.churnScore  ?? 0) / maxChurn) +
+      wn.survival    * (c.survivalRate ?? 0),
   }));
   const totalRaw = scored.reduce((s, c) => s + c.rawScore, 0);
   return scored
@@ -91,7 +101,10 @@ export default function ResultsPage() {
   const [results, setResults] = useState<AnalyzeResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [errorCode, setErrorCode] = useState<AnalyzeError["code"] | null>(null);
-  const [weights, setWeights] = useState<WeightState>({ linesAdded: 50, linesDeleted: 25, commits: 25 });
+  const [weights, setWeights] = useState<WeightState>({
+    linesAdded: 50, linesDeleted: 25, commits: 25,
+    complexity: 0, churn: 0, survival: 0,
+  });
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [confettiActive, setConfettiActive] = useState(false);
   const [copied, setCopied] = useState(false);

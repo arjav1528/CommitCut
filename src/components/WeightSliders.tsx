@@ -4,6 +4,9 @@ export interface WeightState {
   linesAdded: number;
   linesDeleted: number;
   commits: number;
+  complexity: number;
+  churn: number;
+  survival: number;
 }
 
 interface Props {
@@ -67,10 +70,21 @@ function SliderRow({ label, color, value, pct, onInput }: SliderRowProps) {
 }
 
 export function WeightSliders({ weights, onChange }: Props) {
-  const total = weights.linesAdded + weights.linesDeleted + weights.commits || 1;
-  const pctAdded = Math.round((weights.linesAdded / total) * 100);
-  const pctDeleted = Math.round((weights.linesDeleted / total) * 100);
-  const pctCommits = 100 - pctAdded - pctDeleted;
+  const total =
+    weights.linesAdded +
+    weights.linesDeleted +
+    weights.commits +
+    weights.complexity +
+    weights.churn +
+    weights.survival || 1;
+
+  const pct = (v: number) => Math.round((v / total) * 100);
+  const pctAdded = pct(weights.linesAdded);
+  const pctDeleted = pct(weights.linesDeleted);
+  const pctCommits = pct(weights.commits);
+  const pctComplexity = pct(weights.complexity);
+  const pctChurn = pct(weights.churn);
+  const pctSurvival = pct(weights.survival);
 
   return (
     <div
@@ -128,6 +142,35 @@ export function WeightSliders({ weights, onChange }: Props) {
           pct={pctCommits}
           onInput={(v) => onChange({ ...weights, commits: v })}
         />
+        <div
+          style={{
+            height: 1,
+            background: "var(--ink)",
+            opacity: 0.12,
+            margin: "2px 0",
+          }}
+        />
+        <SliderRow
+          label="Complexity"
+          color="#c07c3a"
+          value={weights.complexity}
+          pct={pctComplexity}
+          onInput={(v) => onChange({ ...weights, complexity: v })}
+        />
+        <SliderRow
+          label="Churn"
+          color="#8b5cf6"
+          value={weights.churn}
+          pct={pctChurn}
+          onInput={(v) => onChange({ ...weights, churn: v })}
+        />
+        <SliderRow
+          label="Survival"
+          color="#0ea5e9"
+          value={weights.survival}
+          pct={pctSurvival}
+          onInput={(v) => onChange({ ...weights, survival: v })}
+        />
       </div>
       <div
         style={{
@@ -138,6 +181,7 @@ export function WeightSliders({ weights, onChange }: Props) {
         }}
       >
         Percentages shown are normalized proportions. Drag to re-score live.
+        Complexity, Churn, Survival default to 0 — enable when available.
       </div>
     </div>
   );
