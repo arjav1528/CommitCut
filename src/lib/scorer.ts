@@ -20,6 +20,24 @@ function normalize(value: number, max: number): number {
   return max === 0 ? 0 : value / max;
 }
 
+const BOT_NAME_RE = /\[bot\]$|\bbot\b/i;
+const BOT_NAMES = new Set([
+  "dependabot", "renovate", "renovate-bot", "snyk-bot", "github-actions",
+  "codecov", "semantic-release-bot", "allcontributors", "greenkeeper",
+  "imgbot", "stale", "netlify", "vercel", "sonarcloud", "codefactor",
+]);
+
+function detectBot(name: string, email: string): boolean {
+  const ln = name.toLowerCase().trim();
+  const le = email.toLowerCase();
+  if (BOT_NAME_RE.test(ln)) return true;
+  const base = ln.replace(/\[bot\]$/, "").trim().replace(/\s+/g, "-");
+  if (BOT_NAMES.has(base)) return true;
+  // noreply emails whose display name contains [bot]
+  if (le.endsWith("@users.noreply.github.com") && ln.includes("[bot]")) return true;
+  return false;
+}
+
 // Extract GitHub username from noreply email: "12345+username@users.noreply.github.com" → "username"
 function parseNoreplyUsername(email: string): string | null {
   const m = email.match(/^\d+\+(.+)@users\.noreply\.github\.com$/);
@@ -221,6 +239,7 @@ export function scoreContributors(
         churnScore,
         survivalRate,
         linesAlive,
+        isBot: detectBot(c.name, c.email),
       } satisfies ContributorStats;
     })
     .sort((a, b) => b.percentage - a.percentage);

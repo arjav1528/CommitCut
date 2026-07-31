@@ -149,7 +149,11 @@ export default function ResultsPage() {
           setPageState("error");
           return;
         }
-        setResults(data as AnalyzeResponse);
+        const res = data as AnalyzeResponse;
+        setResults(res);
+        // Auto-exclude detected bots so they don't pollute the score
+        const botEmails = res.contributors.filter((c) => c.isBot).map((c) => c.email);
+        if (botEmails.length) setExcluded(new Set(botEmails));
         setPageState("results");
         setConfettiActive(true);
         setTimeout(() => setConfettiActive(false), 3000);
@@ -389,6 +393,26 @@ export default function ResultsPage() {
                     {results.totalCommits} commits across {results.repoCount} repo{results.repoCount > 1 ? "s" : ""}{results.dateRange.start ? ` · ${results.dateRange.start} → ${results.dateRange.end}` : " · all time"}
                     {excluded.size > 0 && ` · ${excluded.size} excluded`}
                   </p>
+                  {(() => {
+                    const botCount = results.contributors.filter((c) => c.isBot && excluded.has(c.email)).length;
+                    if (!botCount) return null;
+                    return (
+                      <p style={{ fontSize: 11, color: "var(--muted)", fontFamily: "Kalam, ui-sans-serif, sans-serif", marginTop: 2 }}>
+                        {botCount} bot account{botCount > 1 ? "s" : ""} auto-excluded
+                        {" · "}
+                        <button
+                          onClick={() => setExcluded((prev) => {
+                            const next = new Set(prev);
+                            results.contributors.filter((c) => c.isBot).forEach((c) => next.delete(c.email));
+                            return next;
+                          })}
+                          style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer", fontFamily: "Kalam, ui-sans-serif, sans-serif", fontSize: 11, padding: 0, textDecoration: "underline" }}
+                        >
+                          restore
+                        </button>
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <button onClick={shareUrl} style={{ ...btnBase, color: shareCopied ? "var(--mint)" : "var(--ink)" }}>
