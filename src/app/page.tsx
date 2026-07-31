@@ -78,17 +78,24 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [allTime, setAllTime] = useState(false);
   const [signOutConfirm, setSignOutConfirm] = useState(false);
+  const [signOutClosing, setSignOutClosing] = useState(false);
   const signOutRef = useRef<HTMLDivElement>(null);
+
+  function closeSignOut() {
+    setSignOutClosing(true);
+    setTimeout(() => { setSignOutConfirm(false); setSignOutClosing(false); }, 130);
+  }
 
   useEffect(() => {
     if (!signOutConfirm) return;
     function handleClickOutside(e: MouseEvent) {
       if (signOutRef.current && !signOutRef.current.contains(e.target as Node)) {
-        setSignOutConfirm(false);
+        closeSignOut();
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signOutConfirm]);
 
   function loadDemo() {
@@ -161,7 +168,7 @@ export default function Home() {
         {session ? (
           <div ref={signOutRef} style={{ position: "relative" }}>
             <button
-              onClick={() => setSignOutConfirm(true)}
+              onClick={() => signOutConfirm ? closeSignOut() : setSignOutConfirm(true)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -192,6 +199,7 @@ export default function Home() {
 
             {signOutConfirm && (
               <div
+                className={signOutClosing ? "popover-out" : "popover-in"}
                 style={{
                   position: "absolute",
                   top: "calc(100% + 8px)",
@@ -247,7 +255,7 @@ export default function Home() {
                     Sign out
                   </button>
                   <button
-                    onClick={() => setSignOutConfirm(false)}
+                    onClick={closeSignOut}
                     style={{
                       flex: 1,
                       background: "transparent",
