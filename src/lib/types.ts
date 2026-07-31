@@ -30,5 +30,5 @@ export interface AnalyzeResponse {
 
 export interface AnalyzeError {
   error: string;
-  code: "NO_COMMITS" | "INVALID_REPO" | "CLONE_FAILED" | "UNKNOWN";
+  code: "NO_COMMITS" | "INVALID_REPO" | "CLONE_FAILED" | "PRIVATE_REPO" | "UNKNOWN";
 }
