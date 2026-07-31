@@ -18,6 +18,10 @@ export interface ContributorStats {
   githubAvatarUrl?: string;
   repoBreakdown?: Record<string, { commits: number; linesAdded: number; linesDeleted: number }>;
   commitDates?: string[]; // YYYY-MM-DD strings
+  avgComplexity?: number; // avg cyclomatic complexity across contributor's commits
+  churnScore?: number;    // avg file-touch frequency for files this contributor modified
+  survivalRate?: number;  // fraction of added lines still alive in HEAD blame (0–1)
+  linesAlive?: number;    // absolute surviving line count from blame
 }
 
 export interface AnalyzeResponse {

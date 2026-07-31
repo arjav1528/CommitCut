@@ -5,6 +5,9 @@ interface RawTotals {
   commits: number;
   linesAdded: number;
   linesDeleted: number;
+  complexitySum: number;
+  complexityCount: number;
+  touchedFiles: Set<string>;
 }
 
 interface RepoStats {
@@ -99,6 +102,11 @@ export function scoreContributors(
       existing.linesAdded += entry.linesAdded;
       existing.linesDeleted += entry.linesDeleted;
       existing.dates.push(entry.date);
+      if (entry.complexity !== undefined) {
+        existing.complexitySum += entry.complexity;
+        existing.complexityCount += 1;
+      }
+      for (const f of entry.filesChanged ?? []) existing.touchedFiles.add(f);
       const rb = existing.repoBreakdown[repoKey];
       if (rb) {
         rb.commits += 1;
@@ -113,6 +121,9 @@ export function scoreContributors(
         commits: 1,
         linesAdded: entry.linesAdded,
         linesDeleted: entry.linesDeleted,
+        complexitySum: entry.complexity ?? 0,
+        complexityCount: entry.complexity !== undefined ? 1 : 0,
+        touchedFiles: new Set(entry.filesChanged ?? []),
         dates: [entry.date],
         repoBreakdown: {
           [repoKey]: { commits: 1, linesAdded: entry.linesAdded, linesDeleted: entry.linesDeleted },
@@ -122,6 +133,14 @@ export function scoreContributors(
   }
 
   if (map.size === 0) return { contributors: [], timeline: [] };
+
+  // Build file churn map: how many commits touched each file across all contributors
+  const fileChurnMap = new Map<string, number>();
+  for (const entry of merged) {
+    for (const f of entry.filesChanged ?? []) {
+      fileChurnMap.set(f, (fileChurnMap.get(f) ?? 0) + 1);
+    }
+  }
 
   const contributors = Array.from(map.entries()).map(([email, data]) => ({
     email,
@@ -165,6 +184,15 @@ export function scoreContributors(
         }
       }
 
+      const avgComplexity =
+        c.complexityCount > 0 ? c.complexitySum / c.complexityCount : undefined;
+
+      const touchedArr = Array.from(c.touchedFiles);
+      const churnScore =
+        touchedArr.length > 0
+          ? touchedArr.reduce((sum, f) => sum + (fileChurnMap.get(f) ?? 1), 0) / touchedArr.length
+          : undefined;
+
       return {
         name: c.name,
         email: c.email,
@@ -181,6 +209,8 @@ export function scoreContributors(
         githubAvatarUrl,
         repoBreakdown: c.repoBreakdown,
         commitDates: c.dates,
+        avgComplexity,
+        churnScore,
       } satisfies ContributorStats;
     })
     .sort((a, b) => b.percentage - a.percentage);

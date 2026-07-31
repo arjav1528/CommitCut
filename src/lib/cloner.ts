@@ -1,5 +1,6 @@
 import { CommitEntry } from "./gitLog";
 import { shouldIgnoreFile } from "./filter";
+import { complexityOfPatch } from "./complexity";
 
 const MAX_LINE_COUNT = 1_000_000;
 
@@ -37,7 +38,7 @@ interface GHCommitDetail {
   sha: string;
   commit: { author: { name: string; email: string; date: string } };
   stats: { additions: number; deletions: number };
-  files: { filename: string; additions: number; deletions: number; status: string }[];
+  files: { filename: string; additions: number; deletions: number; status: string; patch?: string }[];
 }
 
 async function fetchAllCommitShas(
@@ -105,14 +106,22 @@ export async function cloneAndAnalyze(
   return details.map((d): CommitEntry => {
     let linesAdded = 0;
     let linesDeleted = 0;
-    for (const file of d.files ?? []) {
-      if (file.status === "added" || file.status === "modified") {
-        if (!shouldIgnoreFile(file.filename)) {
-          linesAdded = Math.min(linesAdded + (file.additions ?? 0), MAX_LINE_COUNT);
-          linesDeleted = Math.min(linesDeleted + (file.deletions ?? 0), MAX_LINE_COUNT);
-        }
-      }
+    const codeFiles = (d.files ?? []).filter(
+      (f) => (f.status === "added" || f.status === "modified") && !shouldIgnoreFile(f.filename)
+    );
+    for (const file of codeFiles) {
+      linesAdded = Math.min(linesAdded + (file.additions ?? 0), MAX_LINE_COUNT);
+      linesDeleted = Math.min(linesDeleted + (file.deletions ?? 0), MAX_LINE_COUNT);
     }
+
+    const fileComplexities = codeFiles
+      .map((f) => complexityOfPatch(f.patch))
+      .filter((c): c is number => c !== undefined);
+    const complexity =
+      fileComplexities.length > 0
+        ? fileComplexities.reduce((a, b) => a + b, 0) / fileComplexities.length
+        : undefined;
+
     return {
       hash: d.sha,
       authorEmail: d.commit.author.email.trim().toLowerCase(),
@@ -121,6 +130,8 @@ export async function cloneAndAnalyze(
       linesAdded,
       linesDeleted,
       repoUrl,
+      complexity,
+      filesChanged: codeFiles.map((f) => f.filename),
     };
   });
 }

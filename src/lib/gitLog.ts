@@ -8,6 +8,8 @@ export interface CommitEntry {
   linesDeleted: number;
   date: string; // YYYY-MM-DD
   repoUrl?: string;
+  complexity?: number;   // avg cyclomatic complexity of changed files in this commit
+  filesChanged?: string[]; // code file paths touched (after ignore filtering)
 }
 
 const COMMIT_HEADER = /^COMMIT\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)$/;
