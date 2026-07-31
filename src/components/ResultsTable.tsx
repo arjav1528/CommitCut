@@ -261,6 +261,59 @@ function TableRow({
                 }}
               />
             </div>
+            {/* Quality badges — shown when at least one metric is present */}
+            {(c.avgComplexity !== undefined || c.churnScore !== undefined || c.survivalRate !== undefined) && (
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 4 }}>
+                {c.avgComplexity !== undefined && (
+                  <span
+                    title="Avg cyclomatic complexity across commits (higher = more complex logic)"
+                    style={{
+                      fontSize: 10,
+                      fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                      background: "rgba(192,124,58,0.12)",
+                      border: "1px solid #c07c3a",
+                      borderRadius: 4,
+                      padding: "1px 5px",
+                      color: "#c07c3a",
+                    }}
+                  >
+                    CC {c.avgComplexity.toFixed(1)}
+                  </span>
+                )}
+                {c.churnScore !== undefined && (
+                  <span
+                    title="Avg file-touch frequency for files this contributor modified (higher = more contested/evolving files)"
+                    style={{
+                      fontSize: 10,
+                      fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                      background: "rgba(139,92,246,0.12)",
+                      border: "1px solid #8b5cf6",
+                      borderRadius: 4,
+                      padding: "1px 5px",
+                      color: "#8b5cf6",
+                    }}
+                  >
+                    Churn {c.churnScore.toFixed(1)}×
+                  </span>
+                )}
+                {c.survivalRate !== undefined && (
+                  <span
+                    title={`${c.linesAlive?.toLocaleString() ?? "?"} lines still alive in HEAD blame (${Math.round(c.survivalRate * 100)}% survival rate)`}
+                    style={{
+                      fontSize: 10,
+                      fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                      background: "rgba(14,165,233,0.12)",
+                      border: "1px solid #0ea5e9",
+                      borderRadius: 4,
+                      padding: "1px 5px",
+                      color: "#0ea5e9",
+                    }}
+                  >
+                    {Math.round(c.survivalRate * 100)}% alive
+                  </span>
+                )}
+              </div>
+            )}
             {/* Repo breakdown */}
             {expanded && c.repoBreakdown && (
               <RepoBreakdown breakdown={c.repoBreakdown} />
