@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Logo } from "@/components/Logo";
@@ -77,6 +77,19 @@ export default function Home() {
   const [prizeAmount, setPrizeAmount] = useState<string>("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [allTime, setAllTime] = useState(false);
+  const [signOutConfirm, setSignOutConfirm] = useState(false);
+  const signOutRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!signOutConfirm) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (signOutRef.current && !signOutRef.current.contains(e.target as Node)) {
+        setSignOutConfirm(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [signOutConfirm]);
 
   function loadDemo() {
     setRepos(DEMO.repos);
@@ -146,35 +159,114 @@ export default function Home() {
 
         {/* GitHub auth */}
         {session ? (
-          <button
-            onClick={() => signOut()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              border: "2px solid var(--ink)",
-              borderRadius: 999,
-              padding: "5px 14px",
-              background: "var(--paper-2)",
-              cursor: "pointer",
-              fontFamily: "Kalam, ui-sans-serif, sans-serif",
-              fontSize: 13,
-              color: "var(--ink)",
-              fontWeight: 700,
-            }}
-          >
-            {session.user?.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={session.user.image}
-                alt=""
-                width={20}
-                height={20}
-                style={{ borderRadius: "50%", border: "1.5px solid var(--ink)" }}
-              />
+          <div ref={signOutRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => setSignOutConfirm(true)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                border: "2px solid var(--ink)",
+                borderRadius: 999,
+                padding: "5px 14px",
+                background: "var(--paper-2)",
+                cursor: "pointer",
+                fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                fontSize: 13,
+                color: "var(--ink)",
+                fontWeight: 700,
+              }}
+            >
+              {session.user?.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={session.user.image}
+                  alt=""
+                  width={20}
+                  height={20}
+                  style={{ borderRadius: "50%", border: "1.5px solid var(--ink)" }}
+                />
+              )}
+              {session.user?.name ?? "Connected"}
+            </button>
+
+            {signOutConfirm && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  background: "var(--paper-2)",
+                  border: "2px solid var(--ink)",
+                  borderRadius: "14px 16px 12px 14px / 12px 14px 16px 12px",
+                  boxShadow: "3px 4px 0 0 rgba(0,0,0,.85)",
+                  padding: "14px 16px",
+                  minWidth: 220,
+                  zIndex: 50,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-caveat), Caveat, cursive",
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color: "var(--ink)",
+                  }}
+                >
+                  Sign out?
+                </div>
+                <div
+                  style={{
+                    fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                    fontSize: 13,
+                    color: "var(--muted)",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  You won&apos;t be able to analyze private repos until you reconnect.
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => { setSignOutConfirm(false); signOut(); }}
+                    style={{
+                      flex: 1,
+                      background: "var(--ink)",
+                      color: "var(--paper)",
+                      border: "2px solid var(--ink)",
+                      borderRadius: 999,
+                      padding: "5px 0",
+                      fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Sign out
+                  </button>
+                  <button
+                    onClick={() => setSignOutConfirm(false)}
+                    style={{
+                      flex: 1,
+                      background: "transparent",
+                      color: "var(--ink)",
+                      border: "2px solid var(--ink)",
+                      borderRadius: 999,
+                      padding: "5px 0",
+                      fontFamily: "Kalam, ui-sans-serif, sans-serif",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
-            {session.user?.name ?? "Connected"}
-          </button>
+          </div>
         ) : (
           <button
             onClick={() => signIn("github")}
