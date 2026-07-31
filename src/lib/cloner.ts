@@ -9,15 +9,19 @@ function parseOwnerRepo(repoUrl: string): { owner: string; repo: string } {
   return { owner: match[1], repo: match[2] };
 }
 
-async function ghFetch(path: string): Promise<Response> {
-  const token = process.env.GITHUB_TOKEN;
+async function ghFetch(path: string, userToken?: string): Promise<Response> {
+  const token = userToken ?? process.env.GITHUB_TOKEN;
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "CommitCut/1.0",
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`https://api.github.com${path}`, { headers });
-  if (res.status === 404) throw new Error("Repository not found");
+  if (res.status === 404) {
+    if (!token) throw new Error("PRIVATE_REPO");
+    throw new Error("Repository not found");
+  }
+  if (res.status === 401) throw new Error("PRIVATE_REPO");
   if (res.status === 403 || res.status === 429) throw new Error("GitHub API rate limit exceeded. Add a GITHUB_TOKEN env var to increase limits.");
   if (!res.ok) throw new Error(`GitHub API error ${res.status}`);
   return res;
@@ -40,7 +44,8 @@ async function fetchAllCommitShas(
   owner: string,
   repo: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  userToken?: string
 ): Promise<GHCommitListItem[]> {
   const all: GHCommitListItem[] = [];
   let page = 1;
@@ -48,7 +53,7 @@ async function fetchAllCommitShas(
     let qs = `per_page=100&page=${page}`;
     if (startDate) qs += `&since=${startDate}T00:00:00Z`;
     if (endDate) qs += `&until=${endDate}T23:59:59Z`;
-    const res = await ghFetch(`/repos/${owner}/${repo}/commits?${qs}`);
+    const res = await ghFetch(`/repos/${owner}/${repo}/commits?${qs}`, userToken);
     const items: GHCommitListItem[] = await res.json();
     if (!items.length) break;
     all.push(...items);
@@ -59,8 +64,8 @@ async function fetchAllCommitShas(
   return all.filter((c) => c.parents.length < 2);
 }
 
-async function fetchCommitDetail(owner: string, repo: string, sha: string): Promise<GHCommitDetail> {
-  const res = await ghFetch(`/repos/${owner}/${repo}/commits/${sha}`);
+async function fetchCommitDetail(owner: string, repo: string, sha: string, userToken?: string): Promise<GHCommitDetail> {
+  const res = await ghFetch(`/repos/${owner}/${repo}/commits/${sha}`, userToken);
   return res.json();
 }
 
@@ -80,7 +85,8 @@ async function runInBatches<T, R>(
 export async function cloneAndAnalyze(
   repoUrl: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  userToken?: string
 ): Promise<CommitEntry[]> {
   if (!repoUrl.startsWith("https://github.com/")) {
     throw new Error("Only https://github.com URLs are allowed");
@@ -88,11 +94,11 @@ export async function cloneAndAnalyze(
 
   const { owner, repo } = parseOwnerRepo(repoUrl);
 
-  const commits = await fetchAllCommitShas(owner, repo, startDate, endDate);
+  const commits = await fetchAllCommitShas(owner, repo, startDate, endDate, userToken);
 
   const details = await runInBatches(
     commits,
-    (c) => fetchCommitDetail(owner, repo, c.sha),
+    (c) => fetchCommitDetail(owner, repo, c.sha, userToken),
     10
   );
 
