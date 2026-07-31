@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 import { cloneAndAnalyze } from "@/lib/cloner";
 import { aggregateEntries } from "@/lib/aggregator";
 import { scoreContributors } from "@/lib/scorer";
@@ -55,9 +56,12 @@ export async function POST(req: NextRequest) {
 
   const { repoUrls, startDate, endDate, prizeAmount } = parsed.data;
 
+  const session = await auth();
+  const userToken = session?.githubAccessToken;
+
   try {
     const allEntries = await Promise.all(
-      repoUrls.map((url) => cloneAndAnalyze(url, startDate, endDate))
+      repoUrls.map((url) => cloneAndAnalyze(url, startDate, endDate, userToken))
     );
 
     const merged = aggregateEntries(allEntries);
@@ -87,10 +91,22 @@ export async function POST(req: NextRequest) {
     console.error("[analyze] error:", message);
 
     const isRateLimit = message.includes("rate limit");
+    const isPrivate = message === "PRIVATE_REPO";
     const isNotFound =
-      message.includes("not found") ||
-      message.includes("Repository not found") ||
-      message.includes("404");
+      !isPrivate &&
+      (message.includes("not found") ||
+        message.includes("Repository not found") ||
+        message.includes("404"));
+
+    if (isPrivate) {
+      return NextResponse.json<AnalyzeError>(
+        {
+          error: "This repository is private. Connect your GitHub account to access it.",
+          code: "PRIVATE_REPO",
+        },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json<AnalyzeError>(
       {
