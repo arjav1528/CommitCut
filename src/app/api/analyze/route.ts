@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { cloneAndAnalyze } from "@/lib/cloner";
+import { cloneAndAnalyze, fetchSurvivalAcrossRepos } from "@/lib/cloner";
 import { aggregateEntries } from "@/lib/aggregator";
 import { scoreContributors } from "@/lib/scorer";
 import { AnalyzeResponse, AnalyzeError } from "@/lib/types";
@@ -64,8 +64,12 @@ export async function POST(req: NextRequest) {
       repoUrls.map((url) => cloneAndAnalyze(url, startDate, endDate, userToken))
     );
 
+    const survivalByEmail = await fetchSurvivalAcrossRepos(repoUrls, allEntries, userToken).catch(
+      () => undefined
+    );
+
     const merged = aggregateEntries(allEntries);
-    const { contributors, timeline } = scoreContributors(merged, prizeAmount);
+    const { contributors, timeline } = scoreContributors(merged, prizeAmount, survivalByEmail);
 
     if (contributors.length === 0) {
       return NextResponse.json<AnalyzeError>(

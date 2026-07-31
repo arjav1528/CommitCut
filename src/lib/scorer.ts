@@ -78,7 +78,8 @@ function mergeNoreplyEntries(entries: CommitEntry[]): CommitEntry[] {
 
 export function scoreContributors(
   entries: CommitEntry[],
-  prizeAmount?: number
+  prizeAmount?: number,
+  survivalByEmail?: Map<string, { linesAlive: number; linesTotal: number }>
 ): { contributors: ContributorStats[]; timeline: { date: string; count: number }[] } {
   const merged = mergeNoreplyEntries(entries);
 
@@ -193,6 +194,13 @@ export function scoreContributors(
           ? touchedArr.reduce((sum, f) => sum + (fileChurnMap.get(f) ?? 1), 0) / touchedArr.length
           : undefined;
 
+      const survivalData = survivalByEmail?.get(c.email);
+      const survivalRate =
+        survivalData && survivalData.linesTotal > 0
+          ? Math.min(survivalData.linesAlive / survivalData.linesTotal, 1)
+          : undefined;
+      const linesAlive = survivalData?.linesAlive;
+
       return {
         name: c.name,
         email: c.email,
@@ -211,6 +219,8 @@ export function scoreContributors(
         commitDates: c.dates,
         avgComplexity,
         churnScore,
+        survivalRate,
+        linesAlive,
       } satisfies ContributorStats;
     })
     .sort((a, b) => b.percentage - a.percentage);

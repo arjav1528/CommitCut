@@ -83,6 +83,140 @@ async function runInBatches<T, R>(
   return results;
 }
 
+async function fetchDefaultBranch(owner: string, repo: string, userToken?: string): Promise<string> {
+  const res = await ghFetch(`/repos/${owner}/${repo}`, userToken);
+  const data = await res.json() as { default_branch?: string };
+  return data.default_branch ?? "main";
+}
+
+interface BlameRange {
+  startingLine: number;
+  endingLine: number;
+  commit: { author: { email: string } };
+}
+
+// Fetch blame for up to `files` paths in one GraphQL call using field aliases.
+// Returns: file path → array of { email, lines } for each blame range.
+async function fetchBlameForFiles(
+  owner: string,
+  repo: string,
+  branch: string,
+  files: string[],
+  token: string
+): Promise<Map<string, { email: string; lines: number }[]>> {
+  const result = new Map<string, { email: string; lines: number }[]>();
+  const BATCH = 15;
+
+  for (let i = 0; i < files.length; i += BATCH) {
+    const batch = files.slice(i, i + BATCH);
+
+    const fields = batch
+      .map((f, idx) => {
+        const path = f.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        return `f${idx}: blame(path: "${path}") {
+          ranges { startingLine endingLine commit { author { email } } }
+        }`;
+      })
+      .join("\n");
+
+    const query = `{ repository(owner: "${owner}", name: "${repo}") {
+      ref(qualifiedName: "${branch}") {
+        target { ... on Commit { ${fields} } }
+      }
+    }}`;
+
+    let data: unknown;
+    try {
+      const res = await fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "CommitCut/1.0",
+        },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) continue;
+      data = await res.json();
+    } catch {
+      continue;
+    }
+
+    const target = (data as { data?: { repository?: { ref?: { target?: Record<string, { ranges: BlameRange[] }> } } } })
+      ?.data?.repository?.ref?.target;
+    if (!target) continue;
+
+    batch.forEach((file, idx) => {
+      const blameData = target[`f${idx}`];
+      if (!blameData?.ranges) return;
+      result.set(
+        file,
+        blameData.ranges.map((r) => ({
+          email: (r.commit?.author?.email ?? "").toLowerCase(),
+          lines: r.endingLine - r.startingLine + 1,
+        }))
+      );
+    });
+  }
+
+  return result;
+}
+
+export async function fetchSurvivalAcrossRepos(
+  repoUrls: string[],
+  allEntries: CommitEntry[][],
+  userToken?: string
+): Promise<Map<string, { linesAlive: number; linesTotal: number }>> {
+  const token = userToken ?? process.env.GITHUB_TOKEN;
+  const survivalMap = new Map<string, { linesAlive: number; linesTotal: number }>();
+  if (!token) return survivalMap; // GraphQL requires auth
+
+  for (let i = 0; i < repoUrls.length; i++) {
+    const url = repoUrls[i];
+    const entries = allEntries[i];
+    if (!entries.length) continue;
+
+    const { owner, repo } = parseOwnerRepo(url);
+    const uniqueFiles = [...new Set(entries.flatMap((e) => e.filesChanged ?? []))];
+    if (!uniqueFiles.length) continue;
+
+    try {
+      const branch = await fetchDefaultBranch(owner, repo, userToken);
+      const blameMap = await fetchBlameForFiles(owner, repo, branch, uniqueFiles, token);
+
+      // Lines alive per email = lines whose last-touching commit belongs to that email
+      const linesAliveByEmail = new Map<string, number>();
+      for (const ranges of blameMap.values()) {
+        for (const { email, lines } of ranges) {
+          if (email) linesAliveByEmail.set(email, (linesAliveByEmail.get(email) ?? 0) + lines);
+        }
+      }
+
+      // Lines total per email = total lines they added in the analysed period
+      const linesTotalByEmail = new Map<string, number>();
+      for (const e of entries) {
+        const em = e.authorEmail;
+        linesTotalByEmail.set(em, (linesTotalByEmail.get(em) ?? 0) + e.linesAdded);
+      }
+
+      for (const [email, total] of linesTotalByEmail) {
+        const alive = linesAliveByEmail.get(email) ?? 0;
+        const existing = survivalMap.get(email);
+        if (existing) {
+          existing.linesAlive += alive;
+          existing.linesTotal += total;
+        } else {
+          survivalMap.set(email, { linesAlive: alive, linesTotal: total });
+        }
+      }
+    } catch {
+      // Skip this repo; survival is an optional enrichment
+    }
+  }
+
+  return survivalMap;
+}
+
 export async function cloneAndAnalyze(
   repoUrl: string,
   startDate?: string,
