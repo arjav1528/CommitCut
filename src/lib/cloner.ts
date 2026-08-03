@@ -189,7 +189,7 @@ async function fetchBlameForFiles(
   token: string
 ): Promise<Map<string, { email: string; lines: number }[]>> {
   const result = new Map<string, { email: string; lines: number }[]>();
-  const BATCH = 15;
+  const BATCH = 25;
 
   for (let i = 0; i < files.length; i += BATCH) {
     const batch = files.slice(i, i + BATCH);
@@ -255,46 +255,51 @@ export async function fetchSurvivalAcrossRepos(
   const survivalMap = new Map<string, { linesAlive: number; linesTotal: number }>();
   if (!token) return survivalMap; // GraphQL requires auth
 
-  for (let i = 0; i < repoUrls.length; i++) {
-    const url = repoUrls[i];
-    const entries = allEntries[i];
-    if (!entries.length) continue;
+  const perRepoResults = await Promise.all(
+    repoUrls.map(async (url, i) => {
+      const entries = allEntries[i];
+      if (!entries.length) return null;
 
-    const { owner, repo } = parseOwnerRepo(url);
-    const uniqueFiles = [...new Set(entries.flatMap((e) => e.filesChanged ?? []))];
-    if (!uniqueFiles.length) continue;
+      const { owner, repo } = parseOwnerRepo(url);
+      const uniqueFiles = [...new Set(entries.flatMap((e) => e.filesChanged ?? []))];
+      if (!uniqueFiles.length) return null;
 
-    try {
-      const branch = await fetchDefaultBranch(owner, repo, userToken);
-      const blameMap = await fetchBlameForFiles(owner, repo, branch, uniqueFiles, token);
+      try {
+        const branch = await fetchDefaultBranch(owner, repo, userToken);
+        const blameMap = await fetchBlameForFiles(owner, repo, branch, uniqueFiles, token);
 
-      // Lines alive per email = lines whose last-touching commit belongs to that email
-      const linesAliveByEmail = new Map<string, number>();
-      for (const ranges of blameMap.values()) {
-        for (const { email, lines } of ranges) {
-          if (email) linesAliveByEmail.set(email, (linesAliveByEmail.get(email) ?? 0) + lines);
+        const linesAliveByEmail = new Map<string, number>();
+        for (const ranges of blameMap.values()) {
+          for (const { email, lines } of ranges) {
+            if (email) linesAliveByEmail.set(email, (linesAliveByEmail.get(email) ?? 0) + lines);
+          }
         }
-      }
 
-      // Lines total per email = total lines they added in the analysed period
-      const linesTotalByEmail = new Map<string, number>();
-      for (const e of entries) {
-        const em = e.authorEmail;
-        linesTotalByEmail.set(em, (linesTotalByEmail.get(em) ?? 0) + e.linesAdded);
-      }
-
-      for (const [email, total] of linesTotalByEmail) {
-        const alive = linesAliveByEmail.get(email) ?? 0;
-        const existing = survivalMap.get(email);
-        if (existing) {
-          existing.linesAlive += alive;
-          existing.linesTotal += total;
-        } else {
-          survivalMap.set(email, { linesAlive: alive, linesTotal: total });
+        const linesTotalByEmail = new Map<string, number>();
+        for (const e of entries) {
+          const em = e.authorEmail;
+          linesTotalByEmail.set(em, (linesTotalByEmail.get(em) ?? 0) + e.linesAdded);
         }
+
+        return { linesAliveByEmail, linesTotalByEmail };
+      } catch {
+        return null;
       }
-    } catch {
-      // Skip this repo; survival is an optional enrichment
+    })
+  );
+
+  for (const result of perRepoResults) {
+    if (!result) continue;
+    const { linesAliveByEmail, linesTotalByEmail } = result;
+    for (const [email, total] of linesTotalByEmail) {
+      const alive = linesAliveByEmail.get(email) ?? 0;
+      const existing = survivalMap.get(email);
+      if (existing) {
+        existing.linesAlive += alive;
+        existing.linesTotal += total;
+      } else {
+        survivalMap.set(email, { linesAlive: alive, linesTotal: total });
+      }
     }
   }
 
@@ -322,7 +327,7 @@ export async function cloneAndAnalyze(
   const details = await runInBatches(
     commits,
     (c) => fetchCommitDetail(owner, repo, c.sha, userToken),
-    10
+    25
   );
 
   return details.flatMap((d): CommitEntry[] => {
