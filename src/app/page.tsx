@@ -13,6 +13,7 @@ const DEMO = {
   start: "2008-01-01",
   end: new Date().toISOString().slice(0, 10),
   prize: "1000",
+  
 };
 
 const seclabelStyle: React.CSSProperties = {
